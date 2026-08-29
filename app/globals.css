@@ -1,0 +1,61 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-base-950 text-ink-100 font-body antialiased;
+  }
+  h1, h2, h3, h4 {
+    @apply font-display;
+  }
+  /* Respect reduced-motion preferences platform-wide (frontend-design quality floor) */
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+}
+
+@layer components {
+  /* Ambient aurora backdrop — used once on auth/marketing screens, not repeated per-card */
+  .aurora-backdrop {
+    @apply relative bg-base-950 bg-aurora-grid;
+  }
+
+  /* The signature "cyber neon" card: dark glass, glowing border on hover/focus only —
+     resting state stays quiet so the glow means something (active/selected/hovered). */
+  .neon-card {
+    @apply bg-base-800/80 border border-base-700 rounded-card backdrop-blur-sm
+           transition-shadow duration-300 ease-out;
+  }
+  .neon-card:hover, .neon-card:focus-within {
+    @apply shadow-neon-cyan border-neon-cyan/40;
+  }
+
+  .neon-card--accent-violet:hover, .neon-card--accent-violet:focus-within {
+    @apply shadow-neon-violet border-neon-violet/40;
+  }
+
+  .btn-primary {
+    @apply inline-flex items-center justify-center rounded-lg bg-neon-cyan text-base-950
+           font-display font-bold px-5 py-2.5 transition-all duration-200
+           hover:shadow-neon-cyan hover:-translate-y-px
+           focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-neon-cyan
+           disabled:opacity-40 disabled:pointer-events-none;
+  }
+
+  .btn-secondary {
+    @apply inline-flex items-center justify-center rounded-lg border border-base-700 text-ink-100
+           font-display font-medium px-5 py-2.5 transition-colors duration-200
+           hover:border-neon-cyan/50 hover:text-neon-cyan
+           focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-neon-cyan;
+  }
+
+  .credit-badge {
+    @apply inline-flex items-center gap-1.5 rounded-full border border-neon-cyan/30 bg-neon-cyan/10
+           text-neon-cyan font-mono text-sm px-3 py-1;
+  }
+}
