@@ -1,11 +1,10 @@
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getOrgContext } from "@/lib/data/org-context";
-import { KnowledgeManager } from "@/components/dashboard/KnowledgeManager";
 import { EmbedSnippet } from "@/components/dashboard/EmbedSnippet";
 import { StatusBadge } from "@/components/ui/Badge";
 import Link from "next/link";
-import { ArrowLeft, Pencil, Play } from "lucide-react";
+import { ArrowLeft, BookOpen, Brain, Pencil, Play, Wrench } from "lucide-react";
 
 export default async function AgentDetailPage({ params }: { params: { id: string } }) {
   const ctx = await getOrgContext();
@@ -83,15 +82,49 @@ async function AiAgentPanel({
   plan: string;
 }) {
   const supabase = createClient();
-  const { count: chunkCount } = await supabase
-    .from("knowledge_chunks")
-    .select("id", { count: "exact", head: true })
-    .eq("agent_id", agentId)
-    .eq("org_id", orgId);
+  // Summary counts only. The full editors live on their own pages so this
+  // overview stays readable rather than embedding every management surface.
+  const [{ data: sources }, { count: memoryCount }] = await Promise.all([
+    supabase
+      .from("knowledge_sources")
+      .select("chunk_count")
+      .eq("agent_id", agentId)
+      .eq("org_id", orgId),
+    supabase
+      .from("agent_memories")
+      .select("id", { count: "exact", head: true })
+      .eq("agent_id", agentId)
+      .eq("org_id", orgId),
+  ]);
+
+  const sourceCount = sources?.length ?? 0;
+  const chunkCount = (sources ?? []).reduce((sum, s) => sum + (s.chunk_count ?? 0), 0);
 
   return (
     <div className="flex flex-col gap-4">
-      <KnowledgeManager agentId={agentId} chunkCount={chunkCount ?? 0} /><Link href={`/dashboard/agents/${agentId}/memory`} className="btn-secondary">Manage persistent memory</Link>
+      <div className="grid gap-3 sm:grid-cols-3">
+        <SummaryTile
+          icon={BookOpen}
+          label="Knowledge"
+          value={sourceCount === 0 ? "None" : `${sourceCount} sources`}
+          hint={chunkCount ? `${chunkCount.toLocaleString()} chunks` : "Add sources to ground answers"}
+          href={`/dashboard/agents/${agentId}/knowledge`}
+        />
+        <SummaryTile
+          icon={Brain}
+          label="Memory"
+          value={memoryCount ? `${memoryCount} stored` : "Empty"}
+          hint="Facts retained across conversations"
+          href={`/dashboard/agents/${agentId}/memory`}
+        />
+        <SummaryTile
+          icon={Wrench}
+          label="Tools"
+          value="Configure"
+          hint="HTTP tools this agent may call"
+          href={`/dashboard/agents/${agentId}/tools`}
+        />
+      </div>
       {isReady ? (
         <EmbedSnippet publicWidgetId={publicWidgetId} plan={plan} />
       ) : (
@@ -178,5 +211,30 @@ async function MlAgentPanel({ agentId, classNames }: { agentId: string; classNam
         Keys page for a key to call it with.
       </p>
     </div>
+  );
+}
+
+function SummaryTile({
+  icon: Icon,
+  label,
+  value,
+  hint,
+  href,
+}: {
+  icon: typeof BookOpen;
+  label: string;
+  value: string;
+  hint: string;
+  href: string;
+}) {
+  return (
+    <Link href={href} className="neon-card p-4">
+      <span className="flex items-center gap-2 font-mono text-[10px] uppercase tracking-wider text-ink-600">
+        <Icon size={12} aria-hidden="true" />
+        {label}
+      </span>
+      <p className="mt-2 font-display font-bold">{value}</p>
+      <p className="mt-1 text-xs text-ink-600">{hint}</p>
+    </Link>
   );
 }

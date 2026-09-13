@@ -6,6 +6,7 @@ import {
   CheckCircle2,
   CircleDashed,
   Clock,
+  PauseCircle,
   Loader2,
   XCircle,
   type LucideIcon,
@@ -66,6 +67,8 @@ const STATUS_MAP: Record<string, { tone: BadgeTone; icon: LucideIcon; label?: st
   queued: { tone: "warning", icon: Clock },
   pending: { tone: "warning", icon: Clock },
   draft: { tone: "neutral", icon: CircleDashed },
+  paused: { tone: "warning", icon: PauseCircle },
+  expired: { tone: "neutral", icon: Clock },
   disconnected: { tone: "neutral", icon: CircleDashed },
   archived: { tone: "neutral", icon: Archive },
   // terminal states
