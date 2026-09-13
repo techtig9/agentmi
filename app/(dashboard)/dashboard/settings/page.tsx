@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { getOrgContext } from "@/lib/data/org-context";
 import { OrgNameForm } from "@/components/dashboard/OrgNameForm";
@@ -52,9 +53,9 @@ export default async function SettingsPage() {
           On the <span className="text-ink-100 capitalize">{ctx.plan}</span> plan with{" "}
           {ctx.isAdmin ? "unlimited access" : `${ctx.creditBalance.toLocaleString()} credits remaining`}.
           Manage your plan on the{" "}
-          <a href="/dashboard/billing" className="text-neon-cyan hover:underline">
+          <Link href="/dashboard/billing" className="text-neon-cyan hover:underline">
             Billing
-          </a>{" "}
+          </Link>{" "}
           page.
         </p>
       </div>
