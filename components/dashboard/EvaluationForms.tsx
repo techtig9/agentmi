@@ -20,7 +20,7 @@ export function CreateEvaluationForm({ agents }: { agents: { id: string; name: s
     <form action={formAction} className="neon-card p-5 flex flex-col gap-3">
       <p className="font-bold text-sm">New evaluation</p>
       <div className="grid md:grid-cols-2 gap-3">
-        <label className="text-xs text-ink-500">
+        <label className="text-xs text-ink-400">
           Agent
           <select name="agentId" required disabled={agents.length === 0} className="mt-1 w-full rounded-lg bg-base-900 border border-base-700 p-2 text-sm">
             {agents.length === 0 && <option value="">No ready AI agents yet</option>}
@@ -29,12 +29,12 @@ export function CreateEvaluationForm({ agents }: { agents: { id: string; name: s
             ))}
           </select>
         </label>
-        <label className="text-xs text-ink-500">
+        <label className="text-xs text-ink-400">
           Evaluation name
           <input name="name" required minLength={2} maxLength={80} placeholder="Support tone regression" className="mt-1 w-full rounded-lg bg-base-900 border border-base-700 p-2 text-sm" />
         </label>
       </div>
-      <label className="text-xs text-ink-500">
+      <label className="text-xs text-ink-400">
         Test cases — one per line: <code className="text-ink-400">input =&gt; expected substring in the reply</code>
         <textarea
           name="casesText"

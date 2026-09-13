@@ -33,7 +33,7 @@ export default async function EvaluationsPage(){
           <p className="text-2xl font-bold">{x.score==null?'—':`${Number(x.score).toFixed(1)}%`}</p>
           <RunEvaluationButton evaluationId={x.id} />
         </div>
-        {scoredCases.length>0 && <details className="mt-4 text-xs"><summary className="text-ink-500 cursor-pointer">Case results</summary>
+        {scoredCases.length>0 && <details className="mt-4 text-xs"><summary className="text-ink-400 cursor-pointer">Case results</summary>
           <div className="mt-2 space-y-2">{scoredCases.map((sc,i)=><div key={i} className={`rounded-lg border p-2 ${sc.passed?'border-neon-green/30':'border-neon-pink/30'}`}>
             <p className="text-ink-400">{sc.input}</p>
             <p className={sc.passed?'text-neon-green':'text-neon-pink'}><span className="inline-flex items-center gap-1">{sc.passed?<CheckCircle2 size={12} aria-hidden="true"/>:<XCircle size={12} aria-hidden="true"/>}{sc.passed?'passed':'failed'}</span> — expected &quot;{sc.expectedContains}&quot;</p>

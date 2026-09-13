@@ -1,49 +1,79 @@
+import { KeyRound } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { getOrgContext } from "@/lib/data/org-context";
+import { PlatformPage } from "@/components/dashboard/PlatformPage";
 import { CreateApiKeyForm } from "@/components/dashboard/CreateApiKeyForm";
-import { RevokeKeyButton } from "@/components/dashboard/RevokeKeyButton";
+import { ApiKeyRow, type ApiKeyItem } from "@/components/dashboard/ApiKeyRow";
+import { EmptyState } from "@/components/ui/States";
 
 export default async function ApiKeysPage() {
   const ctx = await getOrgContext();
-  const supabase = createClient();
+  const db = createClient();
 
-  const { data: keys } = await supabase
+  const { data: keys } = await db
     .from("api_keys")
     .select("id, name, display_prefix, created_at, last_used_at, revoked_at")
     .eq("org_id", ctx.orgId)
     .order("created_at", { ascending: false });
 
+  const items: ApiKeyItem[] = (keys ?? []).map((key) => ({
+    id: key.id,
+    name: key.name,
+    displayPrefix: key.display_prefix,
+    createdAt: key.created_at,
+    lastUsedAt: key.last_used_at,
+    revokedAt: key.revoked_at,
+  }));
+
+  const active = items.filter((key) => key.revokedAt === null);
+  const revoked = items.filter((key) => key.revokedAt !== null);
+  const canManage = ctx.isAdmin || ctx.role === "owner" || ctx.role === "admin";
+
   return (
-    <div className="max-w-2xl">
-      <h1 className="text-2xl font-bold mb-1">API Keys</h1>
-      <p className="text-ink-400 text-sm mb-6">
-        Use these to call the public API: <code className="font-mono text-xs">POST /api/v1/agents/&#123;id&#125;/predict</code> and{" "}
-        <code className="font-mono text-xs">/chat</code>, with{" "}
-        <code className="font-mono text-xs">Authorization: Bearer &lt;key&gt;</code>.
-      </p>
-
-      <div className="mb-6">
+    <PlatformPage
+      eyebrow="Deploy"
+      title="API Keys"
+      description="Workspace-scoped bearer tokens for the public API. Only a hash is stored, so a secret is shown exactly once when it is created or rotated."
+      action={{ href: "/dashboard/api", label: "API reference" }}
+    >
+      {canManage ? (
         <CreateApiKeyForm />
-      </div>
+      ) : (
+        <p className="rounded-lg border border-base-700 bg-base-900/60 p-4 text-sm text-ink-400">
+          Only an organization owner or admin can create API keys.
+        </p>
+      )}
 
-      <div className="flex flex-col gap-2">
-        {(keys ?? []).map((key) => (
-          <div key={key.id} className="neon-card p-4 flex items-center justify-between text-sm">
-            <div>
-              <p className="font-medium">{key.name}</p>
-              <p className="text-ink-600 font-mono text-xs">{key.display_prefix}…</p>
-            </div>
-            {key.revoked_at ? (
-              <span className="text-ink-600 text-xs">Revoked</span>
-            ) : (
-              <RevokeKeyButton keyId={key.id} />
-            )}
+      <section className="mt-6">
+        <h2 className="mb-4 text-lg font-bold">Active keys</h2>
+        {active.length === 0 ? (
+          <EmptyState
+            icon={KeyRound}
+            title="No active API keys"
+            description="Create a key to call your agents and deployments from your own product."
+          />
+        ) : (
+          <div className="space-y-3">
+            {active.map((key) => (
+              <ApiKeyRow key={key.id} apiKey={key} canManage={canManage} />
+            ))}
           </div>
-        ))}
-        {(!keys || keys.length === 0) && (
-          <p className="text-ink-600 text-sm">No API keys yet.</p>
         )}
-      </div>
-    </div>
+      </section>
+
+      {revoked.length > 0 && (
+        <section className="mt-8">
+          <h2 className="mb-1 text-lg font-bold">Revoked keys</h2>
+          <p className="mb-4 text-xs text-ink-600">
+            Kept for the audit trail. These no longer authenticate anything.
+          </p>
+          <div className="space-y-3 opacity-60">
+            {revoked.map((key) => (
+              <ApiKeyRow key={key.id} apiKey={key} canManage={canManage} />
+            ))}
+          </div>
+        </section>
+      )}
+    </PlatformPage>
   );
 }

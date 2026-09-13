@@ -29,7 +29,7 @@ export default async function SupportPage() {
                   <b className="text-sm">{t.subject}</b>
                   <span className={`text-xs ${t.status === "resolved" ? "text-neon-green" : "text-neon-cyan"}`}>{t.status}</span>
                 </div>
-                <p className="text-xs text-ink-500 mt-2">{t.message}</p>
+                <p className="text-xs text-ink-400 mt-2">{t.message}</p>
                 {t.admin_reply && (
                   <div className="mt-3 rounded-lg bg-base-900 border border-neon-cyan/20 p-3">
                     <p className="text-xs text-neon-cyan mb-1">Reply</p>

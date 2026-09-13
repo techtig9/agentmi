@@ -21,7 +21,7 @@ export default async function AdminSupportPage() {
   return (
     <div>
       <h1 className="text-xl font-bold mb-6">Support tickets</h1>
-      <p className="text-sm text-ink-500 mb-4">{open.length} open</p>
+      <p className="text-sm text-ink-400 mb-4">{open.length} open</p>
       <div className="flex flex-col gap-3 mb-8">
         {open.map((t) => {
           const org = Array.isArray(t.organizations) ? t.organizations[0] : t.organizations;
@@ -41,7 +41,7 @@ export default async function AdminSupportPage() {
         })}
         {open.length === 0 && <p className="text-sm text-ink-600">No open tickets.</p>}
       </div>
-      <p className="text-sm text-ink-500 mb-4">{resolved.length} resolved</p>
+      <p className="text-sm text-ink-400 mb-4">{resolved.length} resolved</p>
       <div className="flex flex-col gap-2">
         {resolved.map((t) => {
           const org = Array.isArray(t.organizations) ? t.organizations[0] : t.organizations;
