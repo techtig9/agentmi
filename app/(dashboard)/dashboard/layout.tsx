@@ -18,6 +18,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
       plan={ctx.plan}
       creditBalance={ctx.creditBalance}
       unreadNotifications={unreadNotifications ?? 0}
+      userEmail={ctx.userEmail}
     >
       {children}
     </DashboardShell>

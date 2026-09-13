@@ -3,6 +3,8 @@ import { redirect } from "next/navigation";
 
 export interface OrgContext {
   userId: string;
+  /** Used by the dashboard shell's account menu. Already on the session — no extra query. */
+  userEmail: string;
   isAdmin: boolean;
   orgId: string;
   orgName: string;
@@ -81,6 +83,7 @@ export async function getOrgContext(): Promise<OrgContext> {
 
   return {
     userId: user.id,
+    userEmail: user.email ?? "",
     isAdmin: profile?.is_admin ?? false,
     orgId: membership.org_id,
     orgName: (membership.organizations as unknown as { name: string })?.name ?? "Untitled",
