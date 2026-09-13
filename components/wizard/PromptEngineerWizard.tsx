@@ -1,7 +1,7 @@
 "use client";
 
 import { useReducer } from "react";
-import { wizardReducer, initialWizardState } from "@/lib/agent-builder/wizard-state";
+import { wizardReducer, seedWizardState } from "@/lib/agent-builder/wizard-state";
 import { creditCostFor } from "@/lib/pricing/costs";
 import { DescribeStep } from "./DescribeStep";
 import { ConfirmTypeStep } from "./ConfirmTypeStep";
@@ -14,10 +14,24 @@ interface Props {
   templates: TemplateOption[];
   isFirstBuildForOrg: boolean;
   isAdmin: boolean;
+  /**
+   * Template preselected via `?template=` (from the Templates page). Already
+   * validated against `templates` server-side, so it is safe to seed with.
+   */
+  initialTemplateId?: string | null;
 }
 
-export function PromptEngineerWizard({ templates, isFirstBuildForOrg, isAdmin }: Props) {
-  const [state, dispatch] = useReducer(wizardReducer, initialWizardState);
+export function PromptEngineerWizard({
+  templates,
+  isFirstBuildForOrg,
+  isAdmin,
+  initialTemplateId = null,
+}: Props) {
+  const [state, dispatch] = useReducer(
+    wizardReducer,
+    initialTemplateId,
+    seedWizardState
+  );
   const next = () => dispatch({ type: "NEXT" });
   const back = () => dispatch({ type: "BACK" });
 

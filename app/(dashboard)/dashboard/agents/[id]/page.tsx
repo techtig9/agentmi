@@ -3,15 +3,9 @@ import { createClient } from "@/lib/supabase/server";
 import { getOrgContext } from "@/lib/data/org-context";
 import { KnowledgeManager } from "@/components/dashboard/KnowledgeManager";
 import { EmbedSnippet } from "@/components/dashboard/EmbedSnippet";
+import { StatusBadge } from "@/components/ui/Badge";
 import Link from "next/link";
-
-const STATUS_COLOR: Record<string, string> = {
-  ready: "text-neon-green",
-  draft: "text-ink-400",
-  training: "text-neon-cyan",
-  failed: "text-neon-pink",
-  archived: "text-ink-600",
-};
+import { ArrowLeft, Pencil, Play } from "lucide-react";
 
 export default async function AgentDetailPage({ params }: { params: { id: string } }) {
   const ctx = await getOrgContext();
@@ -27,16 +21,38 @@ export default async function AgentDetailPage({ params }: { params: { id: string
   if (!agent) notFound();
 
   return (
-    <div className="max-w-2xl">
-      <div className="flex items-center justify-between mb-1">
-        <h1 className="text-2xl font-bold">{agent.name}</h1>
-        <span className={`text-sm font-mono ${STATUS_COLOR[agent.status] ?? "text-ink-400"}`}>
-          {agent.status}
-        </span>
+    <div className="max-w-3xl">
+      <Link
+        href="/dashboard/agents"
+        className="mb-4 inline-flex items-center gap-1.5 text-sm text-ink-400 transition-colors hover:text-ink-100"
+      >
+        <ArrowLeft size={14} aria-hidden="true" />
+        All agents
+      </Link>
+
+      <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        <div className="min-w-0">
+          <div className="flex flex-wrap items-center gap-3">
+            <h1 className="text-2xl font-bold">{agent.name}</h1>
+            <StatusBadge status={agent.status} />
+          </div>
+          <p className="mt-2 text-xs uppercase tracking-wide text-ink-600">
+            {agent.kind} agent · {agent.theme.replace("_", " ")} theme
+          </p>
+        </div>
+        <div className="flex shrink-0 gap-2">
+          {agent.kind === "ai" && agent.status === "ready" && (
+            <Link href={`/dashboard/agents/${agent.id}/test`} className="btn-secondary">
+              <Play size={15} aria-hidden="true" />
+              Test
+            </Link>
+          )}
+          <Link href={`/dashboard/agents/${agent.id}/builder`} className="btn-primary">
+            <Pencil size={15} aria-hidden="true" />
+            Edit
+          </Link>
+        </div>
       </div>
-      <p className="text-ink-600 text-xs uppercase tracking-wide mb-6">
-        {agent.kind} agent · {agent.theme.replace("_", " ")} theme
-      </p>
 
       {agent.kind === "ai" ? (
         <AiAgentPanel

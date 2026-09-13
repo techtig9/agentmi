@@ -1,11 +1,30 @@
 "use client";
 
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
+import { createPortal } from "react-dom";
 import clsx from "clsx";
 import type { LucideIcon } from "lucide-react";
 
+interface MenuPosition {
+  top: number;
+  left: number;
+}
+
+const MENU_WIDTH = 208; // matches min-w below; used to keep the menu on screen
+const VIEWPORT_MARGIN = 8;
+
 /**
- * Click-triggered menu. Closes on outside click, Escape, or item selection, and
+ * Click-triggered menu.
+ *
+ * The menu is rendered through a portal into <body> rather than as an
+ * absolutely-positioned child of the trigger. That is not incidental: the
+ * `.neon-card` surface sets `backdrop-filter`, which creates a stacking
+ * context, so a menu nested inside one card was painted *underneath* any card
+ * later in the DOM no matter how high its z-index — making every agent card's
+ * menu except the last one unclickable. Portalling escapes every ancestor
+ * stacking context and clipping container at once.
+ *
+ * Closes on outside click, Escape, scroll, resize, or item selection, and
  * returns focus to the trigger so keyboard users are not dumped at the top of
  * the document.
  */
@@ -23,14 +42,38 @@ export function Dropdown({
   menuLabel?: string;
 }) {
   const [open, setOpen] = useState(false);
-  const containerRef = useRef<HTMLDivElement>(null);
+  const [position, setPosition] = useState<MenuPosition | null>(null);
+  const [mounted, setMounted] = useState(false);
   const triggerRef = useRef<HTMLButtonElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  // Portals need a DOM target, which does not exist during SSR.
+  useEffect(() => setMounted(true), []);
+
+  const reposition = useCallback(() => {
+    const rect = triggerRef.current?.getBoundingClientRect();
+    if (!rect) return;
+
+    const preferredLeft = align === "right" ? rect.right - MENU_WIDTH : rect.left;
+    // Keep the menu inside the viewport on narrow screens.
+    const left = Math.min(
+      Math.max(VIEWPORT_MARGIN, preferredLeft),
+      window.innerWidth - MENU_WIDTH - VIEWPORT_MARGIN
+    );
+    setPosition({ top: rect.bottom + 6, left });
+  }, [align]);
+
+  useLayoutEffect(() => {
+    if (open) reposition();
+  }, [open, reposition]);
 
   useEffect(() => {
     if (!open) return;
 
     function onPointerDown(event: MouseEvent) {
-      if (!containerRef.current?.contains(event.target as Node)) setOpen(false);
+      const target = event.target as Node;
+      if (triggerRef.current?.contains(target) || menuRef.current?.contains(target)) return;
+      setOpen(false);
     }
     function onKeyDown(event: KeyboardEvent) {
       if (event.key === "Escape") {
@@ -38,31 +81,43 @@ export function Dropdown({
         triggerRef.current?.focus();
       }
     }
+    // A menu anchored to a moving trigger would drift, so close instead of
+    // trying to track it.
+    function onViewportChange() {
+      setOpen(false);
+    }
 
     document.addEventListener("mousedown", onPointerDown);
     document.addEventListener("keydown", onKeyDown);
+    window.addEventListener("scroll", onViewportChange, true);
+    window.addEventListener("resize", onViewportChange);
     return () => {
       document.removeEventListener("mousedown", onPointerDown);
       document.removeEventListener("keydown", onKeyDown);
+      window.removeEventListener("scroll", onViewportChange, true);
+      window.removeEventListener("resize", onViewportChange);
     };
   }, [open]);
 
   return (
-    <div ref={containerRef} className={clsx("relative", className)}>
+    <div className={clsx("relative", className)}>
       {trigger({ open, toggle: () => setOpen((v) => !v), ref: triggerRef })}
-      {open && (
-        <div
-          role="menu"
-          aria-label={menuLabel}
-          onClick={() => setOpen(false)}
-          className={clsx(
-            "absolute z-40 mt-2 min-w-[13rem] rounded-xl border border-base-700 bg-base-900 p-1.5 shadow-popover animate-scale-in",
-            align === "right" ? "right-0" : "left-0"
-          )}
-        >
-          {children}
-        </div>
-      )}
+      {open &&
+        mounted &&
+        position &&
+        createPortal(
+          <div
+            ref={menuRef}
+            role="menu"
+            aria-label={menuLabel}
+            onClick={() => setOpen(false)}
+            style={{ top: position.top, left: position.left, width: MENU_WIDTH }}
+            className="fixed z-[80] rounded-xl border border-base-700 bg-base-900 p-1.5 shadow-popover animate-scale-in"
+          >
+            {children}
+          </div>,
+          document.body
+        )}
     </div>
   );
 }

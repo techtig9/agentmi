@@ -21,6 +21,19 @@ export function DescribeStep({ state, dispatch, onNext }: Props) {
       subtitle="Describe it in plain language — a sentence or two is enough to start."
       onNext={onNext}
       nextDisabled={!canAdvance(state)}
+      help={
+        <>
+          <p>
+            Say what the agent should <strong className="text-ink-100">do</strong>, who it is{" "}
+            <strong className="text-ink-100">for</strong>, and what it should do when it is unsure.
+          </p>
+          <p>
+            Mentioning data you want to predict from (a spreadsheet, historical numbers) points the
+            wizard at an ML agent instead.
+          </p>
+          <p className="text-ink-600">At least 10 characters to continue.</p>
+        </>
+      }
     >
       <textarea
         autoFocus

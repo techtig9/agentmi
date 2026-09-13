@@ -2,20 +2,14 @@
 
 import { Suspense } from "react";
 import { useSearchParams } from "next/navigation";
-import { useFormState, useFormStatus } from "react-dom";
+import { useFormState } from "react-dom";
+import { ShieldCheck } from "lucide-react";
 import { verifyMfaChallenge, type MfaChallengeState } from "@/lib/actions/auth";
-import { NeonInput } from "@/components/ui/NeonInput";
+import { TextField } from "@/components/ui/Field";
+import { SubmitButton } from "@/components/ui/SubmitButton";
+import { FormAlert } from "@/components/ui/FormAlert";
 
 const initialState: MfaChallengeState = { error: null };
-
-function SubmitButton() {
-  const { pending } = useFormStatus();
-  return (
-    <button type="submit" disabled={pending} className="btn-primary w-full mt-2">
-      {pending ? "Verifying…" : "Verify"}
-    </button>
-  );
-}
 
 function MfaChallengeForm() {
   const [state, formAction] = useFormState(verifyMfaChallenge, initialState);
@@ -23,13 +17,19 @@ function MfaChallengeForm() {
 
   return (
     <>
-      <h1 className="text-lg font-bold text-center mb-2">Two-factor verification</h1>
-      <p className="text-sm text-ink-400 text-center mb-6">
+      <div className="mb-4 flex justify-center">
+        <span className="flex h-11 w-11 items-center justify-center rounded-xl border border-neon-cyan/30 bg-neon-cyan/10">
+          <ShieldCheck size={20} className="text-neon-cyan" aria-hidden="true" />
+        </span>
+      </div>
+      <h1 className="mb-2 text-center text-lg font-bold">Two-factor verification</h1>
+      <p className="mb-6 text-center text-sm text-ink-400">
         Enter the 6-digit code from your authenticator app.
       </p>
+
       <form action={formAction} className="flex flex-col gap-4">
         <input type="hidden" name="next" value={next} />
-        <NeonInput
+        <TextField
           id="code"
           name="code"
           label="Authentication code"
@@ -39,13 +39,12 @@ function MfaChallengeForm() {
           maxLength={6}
           autoComplete="one-time-code"
           autoFocus
+          className="[&_input]:text-center [&_input]:font-mono [&_input]:text-lg [&_input]:tracking-[0.5em]"
         />
-        {state.error && (
-          <p role="alert" className="text-neon-pink text-sm">
-            {state.error}
-          </p>
-        )}
-        <SubmitButton />
+        {state.error && <FormAlert message={state.error} />}
+        <SubmitButton className="mt-2 w-full" pendingLabel="Verifying…">
+          Verify
+        </SubmitButton>
       </form>
     </>
   );

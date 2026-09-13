@@ -10,6 +10,25 @@ const orgSchema = z.object({
   name: z.string().min(2, "Organization name must be at least 2 characters").max(80),
 });
 
+/**
+ * Where onboarding should land after the workspace exists.
+ *
+ * Deliberately an allow-list rather than "any string starting with /": a
+ * caller-supplied redirect target is the classic open-redirect vector, and
+ * even path-only values can be abused (`//evil.com` is protocol-relative).
+ * Onboarding only ever needs these three destinations.
+ */
+const ALLOWED_ONBOARDING_DESTINATIONS = new Set([
+  "/dashboard",
+  "/dashboard/create",
+  "/dashboard/create/ml",
+]);
+
+function safeDestination(value: FormDataEntryValue | null): string {
+  const candidate = typeof value === "string" ? value : "";
+  return ALLOWED_ONBOARDING_DESTINATIONS.has(candidate) ? candidate : "/dashboard";
+}
+
 export type OnboardingState = { error: string | null };
 
 const SIGNUP_CREDIT_GRANT = 500; // matches PLANS.free.creditsPerMonth in lib/pricing/plans.ts
@@ -31,6 +50,7 @@ export async function createOrganization(
     return { error: parsed.error.issues[0].message };
   }
 
+  const destination = safeDestination(formData.get("next"));
   const supabase = createClient();
   const {
     data: { user },
@@ -76,7 +96,7 @@ export async function createOrganization(
     console.error("signup credit grant failed:", grantError.message);
   }
 
-  redirect("/dashboard");
+  redirect(destination);
 }
 
 export type UpdateOrgState = { error: string | null; success?: boolean };
