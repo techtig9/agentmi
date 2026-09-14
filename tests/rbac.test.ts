@@ -33,24 +33,47 @@ test("requireRole always allows a platform admin regardless of org role", () => 
 // re-opening the gap invisibly.
 const root = path.resolve(process.cwd());
 
-const expectedGates: Record<string, number> = {
+/*
+ * These are MINIMUMS, not exact counts.
+ *
+ * The guard exists to catch a future edit silently dropping a requireRole()
+ * call. An exact-equality assertion also fires when a NEW role-gated action is
+ * added — which is the opposite of a regression, and would nudge the next
+ * developer towards leaving their action ungated to keep the suite green.
+ * Falling below the audited baseline still fails, which is the behaviour that
+ * actually protects the gap.
+ */
+const minimumGates: Record<string, number> = {
   "lib/actions/team.ts": 2, // inviteTeamMember, revokeInvite
-  "lib/actions/api-keys.ts": 2, // createApiKey, revokeApiKey
+  "lib/actions/api-keys.ts": 2, // createApiKey, revokeApiKey (+ rotateApiKey)
   "lib/actions/webhooks.ts": 2, // upsertWebhookEndpoint, deactivateWebhookEndpoint
   "lib/actions/governance.ts": 4, // createSecret, revokeSecret, createIntegration, disconnectIntegration
-  "lib/actions/deployments.ts": 1, // createDeployment
+  "lib/actions/deployments.ts": 1, // createDeployment (+ disable/enable/rollback)
   "lib/actions/organizations.ts": 1, // updateOrganizationName
   "lib/actions/billing.ts": 1, // startCheckout
 };
 
 test("every previously-unguarded privileged action now calls requireRole", () => {
-  for (const [file, expectedCount] of Object.entries(expectedGates)) {
+  for (const [file, minimumCount] of Object.entries(minimumGates)) {
     const source = fs.readFileSync(path.join(root, file), "utf8");
     const actualCount = (source.match(/requireRole\(ctx,/g) ?? []).length;
-    assert.equal(
-      actualCount,
-      expectedCount,
-      `${file} should call requireRole ${expectedCount} time(s), found ${actualCount} — RBAC gap may have regressed`
+    assert.ok(
+      actualCount >= minimumCount,
+      `${file} should call requireRole at least ${minimumCount} time(s), found ${actualCount} — RBAC gap may have regressed`
+    );
+  }
+});
+
+test("every exported action in a role-gated file is itself gated", () => {
+  // Complements the floor above: a new privileged action added to one of these
+  // files must not slip through simply because the baseline is already met.
+  for (const file of Object.keys(minimumGates)) {
+    const source = fs.readFileSync(path.join(root, file), "utf8");
+    const exported = (source.match(/export async function \w+/g) ?? []).length;
+    const gated = (source.match(/requireRole\(ctx,/g) ?? []).length;
+    assert.ok(
+      gated >= exported - 1,
+      `${file} exports ${exported} actions but gates only ${gated} — check the ungated one is genuinely safe for any member`
     );
   }
 });

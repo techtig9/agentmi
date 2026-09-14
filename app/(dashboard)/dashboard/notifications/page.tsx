@@ -21,7 +21,7 @@ export default async function NotificationsPage() {
             <div className="flex justify-between items-start gap-4">
               <div>
                 <b className="text-sm">{n.title}</b>
-                <p className="text-xs text-ink-500 mt-1">{n.body}</p>
+                <p className="mt-1 text-xs text-ink-400">{n.body}</p>
                 <p className="text-xs text-ink-600 mt-1">{new Date(n.created_at).toLocaleString()}</p>
               </div>
               {!n.read_at && <MarkReadButton notificationId={n.id} />}

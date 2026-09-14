@@ -99,11 +99,26 @@ export async function executeHttpTool(tool: ToolDefinition, input: unknown): Pro
   return text.slice(0, 20_000);
 }
 
+/**
+ * The only tool kinds `executeTool` can actually run.
+ *
+ * Exported so the creation form and its server-side schema cannot drift out of
+ * step with the runtime — offering a kind here that throws below is how you end
+ * up with tools that are configurable but permanently broken.
+ */
+export const EXECUTABLE_TOOL_KINDS = ["http", "custom"] as const;
+export type ExecutableToolKind = (typeof EXECUTABLE_TOOL_KINDS)[number];
+
+export function isExecutableToolKind(kind: string): kind is ExecutableToolKind {
+  return (EXECUTABLE_TOOL_KINDS as readonly string[]).includes(kind);
+}
+
 export async function executeTool(tool: ToolDefinition, input: unknown): Promise<unknown> {
-  if (tool.kind === "calculator") {
-    throw new Error("Calculator execution is not enabled in Phase 2. Use an HTTP tool or the existing calculator integration.");
+  if (!isExecutableToolKind(tool.kind)) {
+    throw new Error(
+      `Tool kind '${tool.kind}' cannot be executed. Only ${EXECUTABLE_TOOL_KINDS.join(" and ")} tools run today.`
+    );
   }
-  if (tool.kind !== "http" && tool.kind !== "custom") throw new Error(`Tool kind '${tool.kind}' is not executable yet.`);
   return executeHttpTool(tool, input);
 }
 

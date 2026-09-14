@@ -39,6 +39,22 @@ export const initialWizardState: WizardState = {
   dataSourceRef: null,
 };
 
+/**
+ * Builds a starting state with a template already chosen.
+ *
+ * The Templates page links to `/dashboard/create?template=<id>`, but nothing
+ * read that parameter, so "Use template" dropped the choice on the floor. The
+ * caller must validate the id against the real template list first — this
+ * helper deliberately does not trust it.
+ *
+ * The step still starts at `describe`: a template narrows the build, it does
+ * not replace describing what the agent is for.
+ */
+export function seedWizardState(templateId: string | null): WizardState {
+  if (!templateId) return initialWizardState;
+  return { ...initialWizardState, templateId };
+}
+
 export type WizardAction =
   | { type: "SET_DESCRIPTION"; description: string; suggestedKind: AgentKind }
   | { type: "CONFIRM_TYPE"; kind: AgentKind }

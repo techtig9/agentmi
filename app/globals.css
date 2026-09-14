@@ -9,12 +9,27 @@
   h1, h2, h3, h4 {
     @apply font-display;
   }
+
+  /* A single, consistent focus ring for every interactive element. Uses
+     :focus-visible so pointer users never see it but keyboard users always do.
+     Applied at base level so a control cannot accidentally ship without one. */
+  a:focus-visible,
+  button:focus-visible,
+  input:focus-visible,
+  select:focus-visible,
+  textarea:focus-visible,
+  summary:focus-visible,
+  [tabindex]:focus-visible {
+    @apply outline outline-2 outline-offset-2 outline-neon-cyan rounded-sm;
+  }
+
   /* Respect reduced-motion preferences platform-wide (frontend-design quality floor) */
   @media (prefers-reduced-motion: reduce) {
     *, *::before, *::after {
       animation-duration: 0.01ms !important;
       animation-iteration-count: 1 !important;
       transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
     }
   }
 }
@@ -40,7 +55,7 @@
   }
 
   .btn-primary {
-    @apply inline-flex items-center justify-center rounded-lg bg-neon-cyan text-base-950
+    @apply inline-flex items-center justify-center gap-2 rounded-lg bg-neon-cyan text-base-950
            font-display font-bold px-5 py-2.5 transition-all duration-200
            hover:shadow-neon-cyan hover:-translate-y-px
            focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-neon-cyan
@@ -48,14 +63,45 @@
   }
 
   .btn-secondary {
-    @apply inline-flex items-center justify-center rounded-lg border border-base-700 text-ink-100
+    @apply inline-flex items-center justify-center gap-2 rounded-lg border border-base-700 text-ink-100
            font-display font-medium px-5 py-2.5 transition-colors duration-200
            hover:border-neon-cyan/50 hover:text-neon-cyan
-           focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-neon-cyan;
+           focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-neon-cyan
+           disabled:opacity-40 disabled:pointer-events-none;
   }
 
   .credit-badge {
     @apply inline-flex items-center gap-1.5 rounded-full border border-neon-cyan/30 bg-neon-cyan/10
            text-neon-cyan font-mono text-sm px-3 py-1;
+  }
+
+  /* Keyboard-only escape hatch to the page content, ahead of the whole nav. */
+  .skip-link {
+    @apply sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[100]
+           focus:rounded-lg focus:bg-neon-cyan focus:px-4 focus:py-2
+           focus:font-display focus:font-bold focus:text-base-950;
+  }
+}
+
+@layer utilities {
+  /* Skeleton shimmer. The moving highlight is a child pseudo-element so the
+     reduced-motion rule above can stop it without hiding the placeholder. */
+  .skeleton-shimmer {
+    @apply relative overflow-hidden;
+  }
+  .skeleton-shimmer::after {
+    content: "";
+    @apply absolute inset-0 -translate-x-full animate-shimmer;
+    background-image: linear-gradient(
+      90deg,
+      transparent,
+      rgba(244, 246, 251, 0.06),
+      transparent
+    );
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .skeleton-shimmer::after {
+      @apply hidden;
+    }
   }
 }

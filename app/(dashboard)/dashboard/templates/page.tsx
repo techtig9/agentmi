@@ -1,2 +1,38 @@
-import { createClient } from '@/lib/supabase/server'; import { getOrgContext } from '@/lib/data/org-context'; import { PlatformPage } from '@/components/dashboard/PlatformPage'; import Link from 'next/link';
-export default async function TemplatesPage(){await getOrgContext();const s=createClient();const {data:t}=await s.from('templates').select('id,name,description,kind,category,config').order('created_at',{ascending:false});return <PlatformPage eyebrow="Ecosystem" title="Templates" description="Start from proven patterns. Templates are immutable starting points; your created agent becomes independent after setup." action={{href:'/dashboard/create',label:'Create Agent'}}><div className="grid md:grid-cols-3 gap-4">{(t??[]).map(x=><div key={x.id} className="neon-card p-5"><div className="flex justify-between"><b>{x.name}</b><span className="text-[10px] uppercase text-neon-cyan">{x.kind}</span></div><p className="text-xs text-ink-600 mt-2">{x.category}</p><p className="text-sm text-ink-400 mt-3">{x.description||'Agentmi template'}</p><Link href={`/dashboard/create?template=${x.id}`} className="inline-block mt-4 text-xs underline">Use template →</Link></div>)}</div></PlatformPage>}
+import { createClient } from "@/lib/supabase/server";
+import { getOrgContext } from "@/lib/data/org-context";
+import { PlatformPage } from "@/components/dashboard/PlatformPage";
+import { TemplateGallery, type TemplateCard } from "@/components/dashboard/TemplateGallery";
+import { templateRequirements, templatePrompt } from "@/lib/templates/describe";
+
+export default async function TemplatesPage() {
+  await getOrgContext();
+  const db = createClient();
+
+  const { data: templates } = await db
+    .from("templates")
+    .select("id, name, description, kind, category, config")
+    .order("category");
+
+  const cards: TemplateCard[] = (templates ?? []).map((template) => ({
+    id: template.id,
+    name: template.name,
+    description: template.description ?? "An Agentmi starting point.",
+    kind: template.kind,
+    category: template.category,
+    // Requirements and the preview are read from the template's own config, so
+    // a card can never promise something the configuration does not contain.
+    requirements: templateRequirements(template.config),
+    prompt: templatePrompt(template.config),
+  }));
+
+  return (
+    <PlatformPage
+      eyebrow="Ecosystem"
+      title="Templates"
+      description="Proven starting points. A template seeds your agent's instructions and expected setup; the agent is yours to change from the moment it is created."
+      action={{ href: "/dashboard/create", label: "Start from scratch" }}
+    >
+      <TemplateGallery templates={cards} />
+    </PlatformPage>
+  );
+}

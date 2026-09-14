@@ -1,3 +1,16 @@
-import Link from 'next/link'; import { PlatformPage } from '@/components/dashboard/PlatformPage';
-const docs=[['Getting Started','Build and test your first AI or ML agent.','/dashboard/create'],['Agents','Identity, prompts, models, memory and lifecycle.','/dashboard/agents'],['Knowledge','RAG sources, ingestion and retrieval.','/dashboard/knowledge'],['Tools','Custom APIs, permissions and execution.','/dashboard/tools'],['Workflows','Visual routing and multi-agent orchestration.','/dashboard/workflows'],['Evaluations','Regression tests and quality scoring.','/dashboard/evaluations'],['Deployment','Production environments and API execution.','/dashboard/deployments'],['Security','RLS, governance, secrets and audit logs.','/dashboard/security']];
-export default function DocsPage(){return <PlatformPage eyebrow="Help" title="Agentmi Documentation" description="A practical product handbook with direct links to the working builder areas."><div className="grid md:grid-cols-2 gap-4">{docs.map(([t,d,h])=><Link href={h} key={t} className="neon-card p-5 hover:border-neon-cyan"><p className="font-bold">{t}</p><p className="text-sm text-ink-400 mt-2">{d}</p><p className="text-xs text-neon-cyan mt-4">Open in workspace →</p></Link>)}</div><div className="neon-card p-6 mt-6"><p className="font-bold">API quick start</p><pre className="text-xs overflow-auto mt-3">{`POST /api/v1/deployments/{deploymentId}/run\nAuthorization: Bearer <agentmi-api-key>\nContent-Type: application/json\n\n{"message":"Hello"}`}</pre></div></PlatformPage>}
+import { PlatformPage } from "@/components/dashboard/PlatformPage";
+import { DocsBrowser } from "@/components/dashboard/DocsBrowser";
+import { DOC_SECTIONS } from "@/lib/docs/content";
+
+export default function DocsPage() {
+  return (
+    <PlatformPage
+      eyebrow="Help"
+      title="Documentation"
+      description="How Agentmi actually behaves, section by section, with a link to the screen where each thing is done."
+      action={{ href: "/dashboard/support", label: "Contact support" }}
+    >
+      <DocsBrowser sections={DOC_SECTIONS} />
+    </PlatformPage>
+  );
+}

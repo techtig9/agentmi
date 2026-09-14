@@ -74,7 +74,7 @@ export function MfaEnrollment({ factor }: { factor: { id: string } | null }) {
       <input type="hidden" name="factorId" value={enrollment.factorId} />
       <p className="text-sm text-ink-400">Scan this with your authenticator app, or enter the key manually.</p>
       <div className="bg-ink-100 rounded-lg p-3 w-fit" dangerouslySetInnerHTML={{ __html: enrollment.qrCode }} />
-      <p className="font-mono text-xs text-ink-500 break-all">{enrollment.secret}</p>
+      <p className="font-mono text-xs text-ink-400 break-all">{enrollment.secret}</p>
       <NeonInput
         id="mfa-code"
         name="code"

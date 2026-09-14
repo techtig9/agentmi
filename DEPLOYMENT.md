@@ -108,15 +108,38 @@ change.
 1. Push this codebase to a Git repo (GitHub/GitLab) — Vercel deploys
    from Git.
 2. Import the repo in Vercel (or your host of choice).
-3. Set every variable from `.env.example` in the host's environment
-   variable settings:
 
-   - `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`,
-     `SUPABASE_SERVICE_ROLE_KEY` — from Supabase step 2
-   - `ANTHROPIC_API_KEY` — from console.anthropic.com
-   - `VOYAGE_API_KEY` — from voyageai.com
+### 4.1 The minimum to get a page to render
+
+The build succeeds without any environment variables, but **every page
+throws at request time without Supabase credentials** — `createClient()`
+requires them, and the landing page calls it before rendering anything.
+A deployment missing these returns an error on every route, including
+`/`. Set these four first:
+
+   - `NEXT_PUBLIC_SUPABASE_URL`
+   - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+   - `SUPABASE_SERVICE_ROLE_KEY`
+   - `NEXT_PUBLIC_APP_URL` — the deployment URL, used to build the
+     endpoint URLs shown on the Deployments page
+
+With those set, the landing page, signup, login, onboarding and the
+whole dashboard render. Agent execution, knowledge indexing and billing
+each need their own keys below.
+
+### 4.2 Everything else
+
+3. Set the remaining variables from `.env.example`:
+
+   - **AI providers** — the runtime tries these in cost order and falls
+     through on a quota or capacity error, so at least one is needed
+     before an agent can run:
+     `GROQ_API_KEY` → `CEREBRAS_API_KEY` → `OPENROUTER_API_KEY`.
+     `ANTHROPIC_API_KEY` is optional and only used when
+     `ANTHROPIC_ENABLED=true`, for complex or large tasks.
+   - `VOYAGE_API_KEY` — from voyageai.com. Knowledge indexing is
+     disabled without it; the rest of the app is unaffected.
    - `TRAINING_SERVICE_URL` — from step 3 above
-   - `NEXT_PUBLIC_APP_URL` — your Vercel deployment URL (or custom domain)
    - `PADDLE_API_KEY`, `NEXT_PUBLIC_PADDLE_CLIENT_TOKEN` — Paddle
      Sandbox dashboard, Developer Tools → Authentication
    - `PADDLE_PRICE_*` (6 values) — create one Product+Price in Paddle
