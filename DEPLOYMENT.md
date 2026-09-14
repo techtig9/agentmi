@@ -123,6 +123,12 @@ A deployment missing these returns an error on every route, including
    - `NEXT_PUBLIC_APP_URL` — the deployment URL, used to build the
      endpoint URLs shown on the Deployments page
 
+Until they are set, the deployment stays up and tells you so rather
+than failing: the marketing landing page renders normally (it needs no
+database), and `/login`, `/signup`, `/onboarding` and `/dashboard`
+redirect to `/setup`, which lists exactly which of these variables are
+still absent. `/api/ready` reports the same state as JSON with a 503.
+
 With those set, the landing page, signup, login, onboarding and the
 whole dashboard render. Agent execution, knowledge indexing and billing
 each need their own keys below.

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/supabase/service";
+import { readSupabaseEnv, supabaseConfigStatus } from "@/lib/supabase/config";
 
 export const dynamic = "force-dynamic";
 
@@ -12,9 +13,13 @@ function configured(name: string) {
  * the database connection without exposing credentials or provider details.
  */
 export async function GET() {
+  // Shared with the middleware, the landing page and the setup screen, so
+  // "configured" cannot mean one thing here and another there.
+  const supabaseEnv = supabaseConfigStatus(readSupabaseEnv());
+
   const configuration = {
-    supabase: configured("NEXT_PUBLIC_SUPABASE_URL") && configured("NEXT_PUBLIC_SUPABASE_ANON_KEY"),
-    serviceRole: configured("SUPABASE_SERVICE_ROLE_KEY"),
+    supabase: supabaseEnv.configured,
+    serviceRole: supabaseEnv.serviceRoleConfigured,
     aiProvider: configured("GROQ_API_KEY") || configured("CEREBRAS_API_KEY") || configured("OPENROUTER_API_KEY") || configured("ANTHROPIC_API_KEY"),
     anthropic: configured("ANTHROPIC_API_KEY") && process.env.ANTHROPIC_ENABLED === "true",
     voyage: configured("VOYAGE_API_KEY") && process.env.VOYAGE_ENABLED !== "false",
