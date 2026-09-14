@@ -1,7 +1,17 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
+import { isSupabaseConfigured } from "@/lib/supabase/config";
 
 export async function middleware(request: NextRequest) {
+  // Without credentials `createServerClient` throws, which would surface on
+  // every protected route as an unhandled error rather than as the
+  // configuration problem it actually is. Nobody can be signed in either, so
+  // the honest destination is the setup screen. `/setup` is outside this
+  // middleware's matcher, so this cannot loop.
+  if (!isSupabaseConfigured()) {
+    return NextResponse.redirect(new URL("/setup", request.url));
+  }
+
   let response = NextResponse.next({ request: { headers: request.headers } });
 
   const supabase = createServerClient(

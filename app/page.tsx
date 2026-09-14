@@ -20,10 +20,20 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
+import { isSupabaseConfigured } from "@/lib/supabase/config";
 import { PLANS, PLAN_ORDER } from "@/lib/pricing/plans";
 import { quotePrice } from "@/lib/pricing/engine";
 import { LandingNav } from "@/components/marketing/LandingNav";
 import { FaqList } from "@/components/marketing/FaqList";
+
+/**
+ * Always rendered per-request. Before the configuration guard below this page
+ * called `cookies()` unconditionally, which made it dynamic implicitly; the
+ * guard can now skip that call, and without this Next.js would prerender the
+ * unconfigured branch at build time and keep serving it after credentials are
+ * added.
+ */
+export const dynamic = "force-dynamic";
 
 export const metadata = {
   title: "Agentmi — Build, test, evaluate and deploy AI agents",
@@ -39,13 +49,20 @@ export const metadata = {
  * uses, so it cannot drift into advertising something that does not exist.
  */
 export default async function LandingPage() {
-  const supabase = createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  // A session can only exist when Supabase is configured, so an unconfigured
+  // deployment has nobody to redirect and the pitch is still perfectly
+  // renderable. Constructing the client anyway would throw and take the whole
+  // public marketing page down with it — a landing page must not require the
+  // database to be reachable in order to render.
+  if (isSupabaseConfigured()) {
+    const supabase = createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
 
-  // Signed-in visitors go straight to work rather than reading the pitch.
-  if (user) redirect("/dashboard");
+    // Signed-in visitors go straight to work rather than reading the pitch.
+    if (user) redirect("/dashboard");
+  }
 
   return (
     <div className="min-h-screen bg-base-950">
