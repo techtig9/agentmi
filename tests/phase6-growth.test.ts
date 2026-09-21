@@ -111,3 +111,20 @@ test("the landing page makes no unverifiable social-proof claims", () => {
     assert.doesNotMatch(page, new RegExp(phrase), `unverifiable claim on the landing page: ${phrase}`);
   }
 });
+
+test("the canonical origin prefers the stable domain over the deployment URL", async () => {
+  // VERCEL_URL is the per-DEPLOYMENT hostname and changes on every push, so
+  // using it for a canonical tag points search engines at an ephemeral URL.
+  // This shipped: production served
+  // <link rel="canonical" href="https://agentmi-rku5rdnmr-techtig.vercel.app/...">
+  const site = read("lib/seo/site.ts");
+  const productionAt = site.indexOf("VERCEL_PROJECT_PRODUCTION_URL");
+  const deploymentAt = site.indexOf("process.env.VERCEL_URL");
+  assert.ok(productionAt > 0, "the stable production domain must be consulted");
+  assert.ok(
+    productionAt < deploymentAt,
+    "the stable domain must be preferred over the per-deployment hostname"
+  );
+  // The explicit setting still wins over both.
+  assert.ok(site.indexOf("NEXT_PUBLIC_APP_URL") < productionAt);
+});

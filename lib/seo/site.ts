@@ -13,8 +13,16 @@ export function siteOrigin(): string | null {
   const configured = process.env.NEXT_PUBLIC_APP_URL?.trim();
   if (configured) return configured.replace(/\/+$/, "");
 
-  // Vercel injects this per deployment, so previews get correct absolute URLs
-  // without anyone configuring them.
+  // VERCEL_PROJECT_PRODUCTION_URL is the stable production domain.
+  // VERCEL_URL is the per-DEPLOYMENT hostname and changes on every push, so
+  // using it for a canonical tag points search engines at an ephemeral URL
+  // that will not be the live site tomorrow. Preferred order matters here.
+  const productionDomain = process.env.VERCEL_PROJECT_PRODUCTION_URL?.trim();
+  if (productionDomain) return `https://${productionDomain.replace(/\/+$/, "")}`;
+
+  // Only as a last resort, and only so preview deployments have absolute URLs
+  // at all. Previews are noindex via robots.txt, so an ephemeral canonical
+  // there is harmless.
   const vercel = process.env.VERCEL_URL?.trim();
   if (vercel) return `https://${vercel.replace(/\/+$/, "")}`;
 

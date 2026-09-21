@@ -72,6 +72,13 @@ stays up and serves `/setup`, which lists what is missing, rather than failing.
 | `SUPABASE_SERVICE_ROLE_KEY` | same page — server-only, bypasses RLS |
 | `NEXT_PUBLIC_APP_URL` | your deployment URL, no trailing slash |
 
+`NEXT_PUBLIC_APP_URL` must be set **before the build runs**, not only at
+runtime. The marketing and legal pages are prerendered, so their canonical
+and Open Graph URLs are baked in at build time; setting the variable
+afterwards leaves those tags absent until the next deployment. If it is
+missing, Vercel's own `VERCEL_PROJECT_PRODUCTION_URL` is used, which is the
+stable production domain — never `VERCEL_URL`, which changes on every push.
+
 With those four set, the landing page, signup, login, onboarding and the whole
 dashboard work.
 

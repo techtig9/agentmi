@@ -4,9 +4,10 @@ import { useEffect, useState } from "react";
 import { Monitor, Moon, Sun } from "lucide-react";
 import clsx from "clsx";
 
-export type ThemePreference = "light" | "dark" | "system";
+import { THEME_STORAGE_KEY, isThemePreference, type ThemePreference } from "@/lib/theme/storage";
 
-export const THEME_STORAGE_KEY = "agentmi-theme";
+export { THEME_STORAGE_KEY };
+export type { ThemePreference };
 
 /**
  * Resolves a stored preference to the class that should be on <html>.
@@ -20,7 +21,7 @@ export function resolveTheme(preference: ThemePreference, prefersDark: boolean):
 export function readStoredPreference(): ThemePreference {
   try {
     const stored = localStorage.getItem(THEME_STORAGE_KEY);
-    if (stored === "light" || stored === "dark" || stored === "system") return stored;
+    if (isThemePreference(stored)) return stored;
   } catch {
     // Private mode or blocked storage: fall back to following the OS.
   }

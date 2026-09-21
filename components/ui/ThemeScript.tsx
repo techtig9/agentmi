@@ -1,4 +1,4 @@
-import { THEME_STORAGE_KEY } from "./ThemeToggle";
+import { THEME_STORAGE_KEY } from "@/lib/theme/storage";
 
 /**
  * Applies the stored theme before the browser paints.

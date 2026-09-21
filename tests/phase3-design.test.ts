@@ -57,3 +57,28 @@ test("the node graph is theme-aware and animates only compositable properties", 
   assert.match(svg, /aria-labelledby/);
   assert.match(svg, /<title/);
 });
+
+test("the boot script embeds the real storage key, not a client-reference proxy", async () => {
+  // This shipped broken. THEME_STORAGE_KEY was imported from a "use client"
+  // module into a server component, so it was a client-reference proxy and
+  // JSON.stringify produced `{}`. The rendered script read
+  // `localStorage.getItem({})`, meaning the saved preference was never read
+  // and every page load fell back to the OS setting.
+  const { THEME_STORAGE_KEY } = await import("../lib/theme/storage");
+  assert.equal(typeof THEME_STORAGE_KEY, "string");
+  assert.ok(THEME_STORAGE_KEY.length > 0);
+
+  const storage = read("lib/theme/storage.ts");
+  assert.doesNotMatch(storage, /^\s*["']use client["']/m, "the key module must not be client-only");
+
+  const script = read("components/ui/ThemeScript.tsx");
+  assert.match(script, /from "@\/lib\/theme\/storage"/, "must not import the key from a client module");
+});
+
+test("the toggle and the boot script agree on the storage key", async () => {
+  const { THEME_STORAGE_KEY } = await import("../lib/theme/storage");
+  const toggle = read("components/ui/ThemeToggle.tsx");
+  assert.match(toggle, /from "@\/lib\/theme\/storage"/, "both must read one definition");
+  // A key written twice is a key that can drift.
+  assert.doesNotMatch(toggle, new RegExp(`=\\s*["']${THEME_STORAGE_KEY}["']`), "the key must not be redefined here");
+});
