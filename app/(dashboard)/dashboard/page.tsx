@@ -15,6 +15,8 @@ import {
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { getOrgContext } from "@/lib/data/org-context";
+import { usageStatus } from "@/lib/pricing/entitlements";
+import { UsageMeter } from "@/components/dashboard/UsageMeter";
 import { summarizeRuns, formatDuration, formatRelativeTime, type RunRow } from "@/lib/data/run-metrics";
 import { MetricCard } from "@/components/ui/Card";
 import { StatusBadge } from "@/components/ui/Badge";
@@ -97,6 +99,10 @@ export default async function DashboardPage() {
           </div>
         </div>
       </section>
+
+      {/* Shown for every plan; the meter itself decides whether a prompt is
+          warranted, so a healthy balance renders the bar and nothing more. */}
+      <UsageMeter status={usageStatus(ctx.plan, ctx.creditBalance)} className="mb-7" />
 
       <section aria-label="Workspace metrics" className="mb-4 grid grid-cols-2 gap-4 lg:grid-cols-4">
         <MetricCard

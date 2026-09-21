@@ -21,11 +21,11 @@ import {
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { isSupabaseConfigured } from "@/lib/supabase/config";
-import { PLANS, PLAN_ORDER } from "@/lib/pricing/plans";
-import { quotePrice } from "@/lib/pricing/engine";
 import { LandingNav } from "@/components/marketing/LandingNav";
 import { FaqList } from "@/components/marketing/FaqList";
 import { NodeGraph } from "@/components/marketing/NodeGraph";
+import { PricingTable } from "@/components/marketing/PricingTable";
+import { StructuredData } from "@/components/marketing/StructuredData";
 
 /**
  * Always rendered per-request. Before the configuration guard below this page
@@ -74,8 +74,10 @@ export default async function LandingPage() {
 
       <main id="main">
         <Hero />
+        <HowItWorks />
         <PlatformOverview />
         <CapabilityDetail />
+        <HowWeDiffer />
         <SecuritySection />
         <Pricing />
         <Faq />
@@ -311,45 +313,8 @@ function Pricing() {
           title="Start free, pay when it works"
           description="Credits cover agent builds, messages, training and predictions. Every plan includes the full platform."
         />
-        <div className="mt-12 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          {PLAN_ORDER.map((planId) => {
-            const plan = PLANS[planId];
-            const quote = quotePrice({ planId, cycle: "monthly", launchActive });
-            const featured = planId === "pro";
+        <PricingTable launchActive={launchActive} />
 
-            return (
-              <div
-                key={planId}
-                className={`neon-card flex flex-col p-6 ${featured ? "border-neon-cyan/40" : ""}`}
-              >
-                {featured && (
-                  <span className="mb-3 inline-flex w-fit rounded-full border border-neon-cyan/30 bg-neon-cyan/10 px-2.5 py-0.5 font-mono text-[10px] uppercase tracking-wider text-neon-cyan">
-                    Most popular
-                  </span>
-                )}
-                <h3 className="font-display text-lg font-bold">{plan.name}</h3>
-                <p className="mt-3 font-display text-3xl font-bold">
-                  {quote.amountCents === 0 ? "Free" : formatCents(quote.amountCents)}
-                  {quote.amountCents > 0 && (
-                    <span className="ml-1 text-sm font-normal text-ink-600">/mo</span>
-                  )}
-                </p>
-                {quote.isLaunchPrice && quote.amountCents > 0 && (
-                  <p className="mt-1.5 text-xs text-neon-violet">Launch pricing — 20% off</p>
-                )}
-                <p className="mt-2 font-mono text-xs text-neon-cyan">
-                  {plan.creditsPerMonth.toLocaleString()} credits / month
-                </p>
-                <Link
-                  href="/signup"
-                  className={`mt-6 w-full ${featured ? "btn-primary" : "btn-secondary"}`}
-                >
-                  {quote.amountCents === 0 ? "Start free" : `Choose ${plan.name}`}
-                </Link>
-              </div>
-            );
-          })}
-        </div>
         <p className="mt-6 text-center text-xs text-ink-600">
           Billing is handled by Paddle. Plans and credit allowances come from the same configuration
           the app bills against.
@@ -357,10 +322,6 @@ function Pricing() {
       </div>
     </section>
   );
-}
-
-function formatCents(cents: number): string {
-  return `$${(cents / 100).toFixed(cents % 100 === 0 ? 0 : 2)}`;
 }
 
 const FAQS: ReadonlyArray<readonly [string, string]> = [
@@ -396,6 +357,7 @@ function Faq() {
       <div className="mx-auto max-w-3xl">
         <SectionHeading eyebrow="FAQ" title="Questions worth asking first" />
         <FaqList items={FAQS.map(([question, answer]) => ({ question, answer }))} />
+        <StructuredData faqs={FAQS.map(([q, a]) => ({ q, a }))} />
       </div>
     </section>
   );
@@ -420,6 +382,73 @@ function FinalCta() {
           <Link href="/login" className="btn-secondary w-full sm:w-auto">
             Sign in
           </Link>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/**
+ * Three steps, each naming the screen that does it — so the claim is checkable
+ * against the product rather than being marketing shape.
+ */
+function HowItWorks() {
+  const steps: ReadonlyArray<readonly [string, string, string]> = [
+    ["Describe", "Say what you need in plain language. Agentmi suggests an AI agent or an ML agent and picks a starting template.", "/dashboard/create"],
+    ["Ground and test", "Attach knowledge, register tools, then talk to it in the playground. Every message is recorded with a full trace.", "/dashboard/agents"],
+    ["Deploy", "Promote it to a versioned endpoint and call it from your product, or roll back to an earlier snapshot.", "/dashboard/deployments"],
+  ];
+
+  return (
+    <section className="border-b border-base-700 px-4 py-20">
+      <div className="mx-auto max-w-5xl">
+        <SectionHeading
+          eyebrow="How it works"
+          title="A working agent in three steps"
+          description="No separate staging path: what you test in the playground is the runtime that serves production traffic."
+        />
+        <ol className="mt-12 grid gap-4 md:grid-cols-3">
+          {steps.map(([title, detail], index) => (
+            <li key={title} className="neon-card p-6">
+              <span className="font-mono text-xs text-neon-cyan">0{index + 1}</span>
+              <h3 className="mt-3 font-display text-lg font-bold">{title}</h3>
+              <p className="mt-2 text-sm leading-relaxed text-ink-400">{detail}</p>
+            </li>
+          ))}
+        </ol>
+      </div>
+    </section>
+  );
+}
+
+/**
+ * Differentiators. Every line here is a statement about this codebase that a
+ * reader could verify by using the product or reading the docs — no
+ * competitor comparisons, which could not be kept accurate or checkable.
+ */
+function HowWeDiffer() {
+  const points: ReadonlyArray<readonly [string, string]> = [
+    ["One runtime, not two", "Evaluations, the playground and the public API all execute the same code path, so a passing test cannot hide a different production behaviour."],
+    ["Every run is inspectable", "Each execution stores status, duration and a step-by-step trace: retrieval, the model call with its provider, and every tool call with its outcome."],
+    ["Provider fallback built in", "Requests try Groq, then Cerebras, then OpenRouter, falling through on quota or capacity errors instead of failing the run."],
+    ["AI and ML in one workspace", "Language-model agents and models trained on your own tabular data share the same deployment, credit and observability surface."],
+  ];
+
+  return (
+    <section className="border-b border-base-700 px-4 py-20">
+      <div className="mx-auto max-w-5xl">
+        <SectionHeading
+          eyebrow="How we differ"
+          title="Claims you can check in the product"
+          description="Each of these is visible in the app or the source, not a positioning statement."
+        />
+        <div className="mt-12 grid gap-4 sm:grid-cols-2">
+          {points.map(([title, detail]) => (
+            <div key={title} className="neon-card p-6">
+              <h3 className="font-display text-base font-bold">{title}</h3>
+              <p className="mt-2 text-sm leading-relaxed text-ink-400">{detail}</p>
+            </div>
+          ))}
         </div>
       </div>
     </section>
