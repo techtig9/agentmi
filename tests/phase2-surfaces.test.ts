@@ -17,11 +17,15 @@ test("the landing page is a real page, not a redirect stub", () => {
 });
 
 test("landing pricing is quoted through the billing engine, not hardcoded", () => {
-  const page = read("app/page.tsx");
-  assert.ok(page.includes("quotePrice"), "must quote through lib/pricing/engine");
-  assert.ok(page.includes("PLAN_ORDER"), "must render the real plan list");
+  // The pricing table moved into its own client component when the
+  // monthly/yearly toggle was added. The guarantee is unchanged: whichever
+  // file renders the landing page's prices must derive them from the engine
+  // and must not carry a literal price string.
+  const surface = read("app/page.tsx") + read("components/marketing/PricingTable.tsx");
+  assert.ok(surface.includes("quotePrice"), "must quote through lib/pricing/engine");
+  assert.ok(surface.includes("PLAN_ORDER"), "must render the real plan list");
   assert.ok(
-    !/\$\d+\s*\/\s*mo/.test(page),
+    !/\$\d+\s*\/\s*mo/.test(surface),
     "must not hardcode a price string alongside the engine-derived one"
   );
 });

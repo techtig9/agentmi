@@ -1,3 +1,7 @@
+import { providerOf } from "@/lib/chat/provider-of";
+import { guardConfigured } from "@/lib/api/not-configured";
+import { parseJsonBody } from "@/lib/api/validate";
+import { playgroundMessageSchema } from "@/lib/api/schemas";
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { getOrgContext } from "@/lib/data/org-context";
@@ -7,13 +11,18 @@ import { recordAgentRun } from "@/lib/observability/record-run";
 import { getOrCreateSession, loadSessionMessages, appendSessionMessages, getMemories } from "@/lib/memory/store";
 
 export async function POST(request: Request, { params }: { params: { id: string } }) {
+  const notConfigured = guardConfigured();
+  if (notConfigured) return notConfigured;
+
   const ctx = await getOrgContext();
   const supabase = createClient();
-  let body: { message?: string; company_name?: string; history?: { role: "user" | "assistant"; content: string }[]; session_id?: string; memory_enabled?: boolean };
-  try { body = await request.json(); } catch { return NextResponse.json({ error: "Invalid JSON." }, { status: 400 }); }
-  if (!body.message || typeof body.message !== "string" || body.message.length > 4000) {
-    return NextResponse.json({ error: "Message is required and must be under 4000 characters." }, { status: 400 });
-  }
+  // `history` is forwarded to the model, so an unbounded array is both a cost
+  // and a latency vector: a caller could paste an arbitrarily long transcript
+  // into a single request. Bounding it here is the only place it can be done
+  // before the tokens are paid for.
+  const parsed = await parseJsonBody(request, playgroundMessageSchema);
+  if (!parsed.ok) return parsed.response;
+  const body = parsed.data;
   const { data: agent } = await supabase.from("agents")
     .select("id,org_id,name,kind,status,config,templates(config)")
     .eq("id", params.id).eq("org_id", ctx.orgId).single();
@@ -43,13 +52,13 @@ export async function POST(request: Request, { params }: { params: { id: string 
     const result = await runAgentChat(runtimeAgent, body.message, body.company_name ?? "the company", history);
     if (body.memory_enabled !== false) await appendSessionMessages({ sessionId, orgId: ctx.orgId, agentId: agent.id, userId: ctx.userId, user: body.message, assistant: result.reply });
     const durationMs = Date.now() - started;
-    const runId = await recordAgentRun({ orgId: ctx.orgId, agentId: agent.id, status: "succeeded", input: { message: body.message }, output: { reply: result.reply }, trace: [{ step: "retrieve", sources: result.sourcesUsed }, { step: "model", provider: "anthropic", model: result.model }, ...result.toolCalls.map((t) => ({ step: "tool", name: t.name, tool_id: t.toolId, status: t.error ? "failed" : "succeeded" }))], durationMs, tokenUsage: result.tokenUsage, costUsd: 0 });
+    const runId = await recordAgentRun({ orgId: ctx.orgId, agentId: agent.id, status: "succeeded", input: { message: body.message }, output: { reply: result.reply }, trace: [{ step: "retrieve", sources: result.sourcesUsed }, { step: "model", provider: providerOf(result.model), model: result.model }, ...result.toolCalls.map((t) => ({ step: "tool", name: t.name, tool_id: t.toolId, status: t.error ? "failed" : "succeeded" }))], durationMs, tokenUsage: result.tokenUsage, costUsd: result.costUsd });
     // run_id, duration_ms and credits_used are returned so the playground can
     // show the real recorded values instead of estimating them client-side.
     return NextResponse.json({ reply: result.reply, sources_used: result.sourcesUsed, model: result.model, token_usage: result.tokenUsage, tool_calls: result.toolCalls, session_id: sessionId, memory_used: result.memoryUsed, run_id: runId, duration_ms: durationMs, credits_used: ctx.isAdmin ? 0 : cost });
   } catch (e) {
     const message = e instanceof Error ? e.message : "Chat failed.";
-    const runId = await recordAgentRun({ orgId: ctx.orgId, agentId: agent.id, status: "failed", input: { message: body.message }, error: message, trace: [{ step: "agent", status: "failed" }], durationMs: Date.now() - started, costUsd: 0 });
+    const runId = await recordAgentRun({ orgId: ctx.orgId, agentId: agent.id, status: "failed", input: { message: body.message }, error: message, trace: [{ step: "agent", status: "failed" }], durationMs: Date.now() - started, costUsd: null });
     // The run id lets the playground link straight to the failed run's detail
     // page; the underlying error text stays server-side.
     return NextResponse.json({ error: "Agent execution failed. Check Runs for details.", run_id: runId }, { status: 502 });

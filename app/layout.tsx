@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import localFont from "next/font/local";
+import { ThemeScript } from "@/components/ui/ThemeScript";
 import "./globals.css";
 
 // Self-hosted instead of next/font/google: the previous version fetched CSS
@@ -38,7 +39,16 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={`${display.variable} ${body.variable} ${mono.variable}`}>
+    <html
+      lang="en"
+      className={`${display.variable} ${body.variable} ${mono.variable}`}
+      // The boot script below adds `dark` before paint; React must not be
+      // told the served markup is wrong when it does.
+      suppressHydrationWarning
+    >
+      <head>
+        <ThemeScript />
+      </head>
       <body>{children}</body>
     </html>
   );

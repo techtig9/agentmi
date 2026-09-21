@@ -1,3 +1,5 @@
+import { providerOf } from "@/lib/chat/provider-of";
+import { guardConfigured } from "@/lib/api/not-configured";
 import { NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/supabase/service";
 import { authenticateApiRequest } from "@/lib/api-keys/authenticate";
@@ -7,6 +9,9 @@ import { checkRateLimit, RATE_LIMITS } from "@/lib/rate-limit/check";
 import { recordAgentRun } from "@/lib/observability/record-run";
 
 export async function POST(request: Request, { params }: { params: { id: string } }) {
+  const notConfigured = guardConfigured();
+  if (notConfigured) return notConfigured;
+
   const auth = await authenticateApiRequest(request);
   if (!auth) return NextResponse.json({ error: "Invalid or missing API key." }, { status: 401 });
 
@@ -62,7 +67,7 @@ export async function POST(request: Request, { params }: { params: { id: string 
       body.message,
       body.company_name ?? "the company"
     );
-    await recordAgentRun({ orgId: auth.orgId, agentId: agent.id, status: "succeeded", input: { message: body.message }, output: { reply: result.reply }, trace: [{ step: "retrieve", sources: result.sourcesUsed }, { step: "model", provider: "anthropic" }], durationMs: Date.now() - started });
+    await recordAgentRun({ orgId: auth.orgId, agentId: agent.id, status: "succeeded", input: { message: body.message }, output: { reply: result.reply }, trace: [{ step: "retrieve", sources: result.sourcesUsed }, { step: "model", provider: providerOf(result.model), model: result.model }], durationMs: Date.now() - started, tokenUsage: result.tokenUsage, costUsd: result.costUsd });
     return NextResponse.json({ agent_id: agent.id, reply: result.reply, sources_used: result.sourcesUsed });
   } catch (e) {
     return NextResponse.json({ error: e instanceof Error ? e.message : "Chat request failed." }, { status: 502 });

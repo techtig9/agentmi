@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { Menu, X } from "lucide-react";
+import { ThemeToggle } from "@/components/ui/ThemeToggle";
 
 const LINKS = [
   ["#platform", "Platform"],
@@ -33,6 +34,7 @@ export function LandingNav() {
         </nav>
 
         <div className="hidden items-center gap-2 sm:flex">
+          <ThemeToggle />
           <Link href="/login" className="text-sm text-ink-400 transition-colors hover:text-ink-100">
             Sign in
           </Link>
@@ -67,6 +69,7 @@ export function LandingNav() {
           ))}
         </nav>
         <div className="mt-3 flex flex-col gap-2">
+          <ThemeToggle className="self-start" />
           <Link href="/login" className="btn-secondary w-full" onClick={() => setOpen(false)}>
             Sign in
           </Link>

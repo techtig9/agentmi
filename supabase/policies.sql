@@ -29,29 +29,37 @@ alter table datasets enable row level security;
 alter table ml_models enable row level security;
 alter table audit_logs enable row level security;
 
+drop policy if exists "org members can read their org" on organizations;
 create policy "org members can read their org" on organizations
   for select using (is_org_member(id) or is_platform_admin());
 
+drop policy if exists "org members can read their membership rows" on memberships;
 create policy "org members can read their membership rows" on memberships
   for select using (is_org_member(org_id) or is_platform_admin());
 
+drop policy if exists "org members can read their subscription" on subscriptions;
 create policy "org members can read their subscription" on subscriptions
   for select using (is_org_member(org_id) or is_platform_admin());
 
+drop policy if exists "org members can read their credit ledger" on credit_ledger;
 create policy "org members can read their credit ledger" on credit_ledger
   for select using (is_org_member(org_id) or is_platform_admin());
 
+drop policy if exists "org members can read their credit balance" on credit_balances;
 create policy "org members can read their credit balance" on credit_balances
   for select using (is_org_member(org_id) or is_platform_admin());
 
+drop policy if exists "org members can manage their agents" on agents;
 create policy "org members can manage their agents" on agents
   for all using (is_org_member(org_id) or is_platform_admin())
   with check (is_org_member(org_id) or is_platform_admin());
 
+drop policy if exists "org members can manage their datasets" on datasets;
 create policy "org members can manage their datasets" on datasets
   for all using (is_org_member(org_id) or is_platform_admin())
   with check (is_org_member(org_id) or is_platform_admin());
 
+drop policy if exists "org members can read model versions for their agents" on ml_models;
 create policy "org members can read model versions for their agents" on ml_models
   for select using (
     is_platform_admin() or exists (
@@ -59,6 +67,7 @@ create policy "org members can read model versions for their agents" on ml_model
     )
   );
 
+drop policy if exists "org members can read their audit log" on audit_logs;
 create policy "org members can read their audit log" on audit_logs
   for select using (is_org_member(org_id) or is_platform_admin());
 

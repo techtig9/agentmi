@@ -8,7 +8,7 @@ set search_path to agentmi, public, extensions;
 create extension if not exists vector;
 
 -- ---------- Knowledge base chunks (RAG for AI agents) ----------
-create table knowledge_chunks (
+create table if not exists knowledge_chunks (
   id uuid primary key default gen_random_uuid(),
   org_id uuid not null references organizations(id) on delete cascade,
   agent_id uuid not null references agents(id) on delete cascade,
@@ -18,21 +18,25 @@ create table knowledge_chunks (
   created_at timestamptz not null default now()
 );
 
-create index idx_knowledge_chunks_agent on knowledge_chunks(agent_id);
+create index if not exists idx_knowledge_chunks_agent on knowledge_chunks(agent_id);
 -- IVFFlat index for approximate nearest-neighbor search at scale.
 -- Requires ANALYZE after bulk inserts; fine to add once real volume exists.
-create index idx_knowledge_chunks_embedding on knowledge_chunks
+create index if not exists idx_knowledge_chunks_embedding on knowledge_chunks
   using ivfflat (embedding vector_cosine_ops) with (lists = 100);
 
 alter table knowledge_chunks enable row level security;
+drop policy if exists "org members can manage their knowledge chunks" on knowledge_chunks;
 create policy "org members can manage their knowledge chunks" on knowledge_chunks
   for all using (is_org_member(org_id) or is_platform_admin())
   with check (is_org_member(org_id) or is_platform_admin());
 
 -- ---------- Training jobs (ML agents) ----------
-create type training_job_status as enum ('queued', 'running', 'succeeded', 'failed');
+do $$ begin
+  create type training_job_status as enum ('queued', 'running', 'succeeded', 'failed');
+exception when duplicate_object then null;
+end $$;
 
-create table training_jobs (
+create table if not exists training_jobs (
   id uuid primary key default gen_random_uuid(),
   org_id uuid not null references organizations(id) on delete cascade,
   agent_id uuid not null references agents(id) on delete cascade,
@@ -45,16 +49,17 @@ create table training_jobs (
   created_at timestamptz not null default now()
 );
 
-create index idx_training_jobs_agent on training_jobs(agent_id);
+create index if not exists idx_training_jobs_agent on training_jobs(agent_id);
 
 alter table training_jobs enable row level security;
+drop policy if exists "org members can read their training jobs" on training_jobs;
 create policy "org members can read their training jobs" on training_jobs
   for select using (is_org_member(org_id) or is_platform_admin());
 
 -- ---------- Billing webhook idempotency ----------
 -- Paddle can redeliver the same event; this prevents double-processing
 -- (e.g. granting credits twice for one payment).
-create table processed_webhook_events (
+create table if not exists processed_webhook_events (
   event_id text primary key,
   event_type text not null,
   processed_at timestamptz not null default now()

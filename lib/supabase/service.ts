@@ -1,3 +1,4 @@
+import { required } from "@/lib/config/env";
 import { createClient } from "@supabase/supabase-js";
 
 /**
@@ -10,8 +11,8 @@ import { createClient } from "@supabase/supabase-js";
  */
 export function createServiceClient() {
   return createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!,
+    required(process.env.NEXT_PUBLIC_SUPABASE_URL, "NEXT_PUBLIC_SUPABASE_URL"),
+    required(process.env.SUPABASE_SERVICE_ROLE_KEY, "SUPABASE_SERVICE_ROLE_KEY"),
     // Added for shared-project deployment: see lib/supabase/client.ts —
     // same reasoning, same "agentmi" schema.
     { db: { schema: "agentmi" } }

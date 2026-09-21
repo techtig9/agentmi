@@ -22,11 +22,13 @@ create table if not exists workflow_edges (
 );
 alter table workflow_nodes enable row level security;
 alter table workflow_edges enable row level security;
+drop policy if exists "org members can manage workflow nodes" on workflow_nodes;
 create policy "org members can manage workflow nodes" on workflow_nodes for all using (
   is_platform_admin() or exists (select 1 from workflows w where w.id=workflow_nodes.workflow_id and is_org_member(w.org_id))
 ) with check (
   is_platform_admin() or exists (select 1 from workflows w where w.id=workflow_nodes.workflow_id and is_org_member(w.org_id))
 );
+drop policy if exists "org members can manage workflow edges" on workflow_edges;
 create policy "org members can manage workflow edges" on workflow_edges for all using (
   is_platform_admin() or exists (select 1 from workflows w where w.id=workflow_edges.workflow_id and is_org_member(w.org_id))
 ) with check (

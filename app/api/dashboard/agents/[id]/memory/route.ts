@@ -1,15 +1,22 @@
+import { guardConfigured } from "@/lib/api/not-configured";
 import { NextResponse } from "next/server";
 import { getOrgContext } from "@/lib/data/org-context";
 import { createClient } from "@/lib/supabase/server";
 import { deleteMemory, getMemories, saveMemory } from "@/lib/memory/store";
 
 export async function GET(_: Request, { params }: { params: { id: string } }) {
+  const notConfigured = guardConfigured();
+  if (notConfigured) return notConfigured;
+
   const ctx = await getOrgContext();
   const memories = await getMemories({ orgId: ctx.orgId, agentId: params.id, userId: ctx.userId });
   return NextResponse.json({ memories });
 }
 
 export async function POST(request: Request, { params }: { params: { id: string } }) {
+  const notConfigured = guardConfigured();
+  if (notConfigured) return notConfigured;
+
   const ctx = await getOrgContext();
   const db = createClient();
   const { data: agent } = await db.from("agents").select("id").eq("id", params.id).eq("org_id", ctx.orgId).single();
@@ -23,6 +30,9 @@ export async function POST(request: Request, { params }: { params: { id: string 
 }
 
 export async function DELETE(request: Request, { params }: { params: { id: string } }) {
+  const notConfigured = guardConfigured();
+  if (notConfigured) return notConfigured;
+
   const ctx = await getOrgContext();
   try {
     const body = await request.json();

@@ -3,6 +3,7 @@ import { buildSystemPrompt } from "@/lib/chat/prompt";
 import { buildAnthropicTool, buildOpenAITool, executeTool, type ToolDefinition } from "@/lib/chat/tool-runtime";
 import { resolveSecret } from "@/lib/secrets/resolve";
 import { formatMemoryContext, type AgentMemory } from "@/lib/memory/store";
+import { estimateCostUsd } from "@/lib/pricing/model-costs";
 
 const TOP_K = 5;
 const DEFAULT_MODEL = "llama-3.3-70b-versatile";
@@ -102,6 +103,8 @@ export interface AgentChatResult {
   sourcesUsed: number;
   model: string;
   tokenUsage: { input_tokens: number; output_tokens: number };
+  /** Estimated provider cost in USD, or null when the model has no rate. */
+  costUsd: number | null;
   toolCalls: { name: string; toolId: string; input: unknown; output?: unknown; error?: string }[];
   memoryUsed: number;
 }
@@ -485,6 +488,9 @@ export async function runAgentChat(
     sourcesUsed: retrieved.length,
     model: `${result.provider}:${result.model}`,
     tokenUsage: result.tokenUsage,
+    // null, not 0, when the model has no configured rate — see
+    // lib/pricing/model-costs.ts. Callers persist it as-is.
+    costUsd: estimateCostUsd(result.provider, result.model, result.tokenUsage),
     toolCalls: result.toolCalls,
     memoryUsed: Array.isArray(config.__memory_context) ? config.__memory_context.length : 0,
   };

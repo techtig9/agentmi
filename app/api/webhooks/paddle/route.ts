@@ -1,3 +1,5 @@
+import { guardConfigured } from "@/lib/api/not-configured";
+import { required } from "@/lib/config/env";
 import { NextResponse, type NextRequest } from "next/server";
 import { verifyPaddleSignature, routePaddleEvent } from "@/lib/billing/paddle-webhook";
 import { createClient } from "@supabase/supabase-js";
@@ -7,12 +9,15 @@ import { createClient } from "@supabase/supabase-js";
 // the one place allowed to bypass that, guarded by signature verification.
 function serviceClient() {
   return createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
+    required(process.env.NEXT_PUBLIC_SUPABASE_URL, "NEXT_PUBLIC_SUPABASE_URL"),
+    required(process.env.SUPABASE_SERVICE_ROLE_KEY, "SUPABASE_SERVICE_ROLE_KEY")
   );
 }
 
 export async function POST(request: NextRequest) {
+  const notConfigured = guardConfigured();
+  if (notConfigured) return notConfigured;
+
   const rawBody = await request.text();
   const signatureHeader = request.headers.get("paddle-signature");
 
@@ -23,7 +28,7 @@ export async function POST(request: NextRequest) {
   const verification = verifyPaddleSignature(
     rawBody,
     signatureHeader,
-    process.env.PADDLE_WEBHOOK_SECRET!
+    required(process.env.PADDLE_WEBHOOK_SECRET, "PADDLE_WEBHOOK_SECRET")
   );
 
   if (!verification.valid) {

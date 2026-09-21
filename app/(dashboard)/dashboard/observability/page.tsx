@@ -4,6 +4,7 @@ import { getOrgContext } from "@/lib/data/org-context";
 import { PlatformPage } from "@/components/dashboard/PlatformPage";
 import { MetricCard } from "@/components/ui/Card";
 import { RunsOverTime, BarList, RangeTabs } from "@/components/ui/Chart";
+import { formatCostUsd, totalCostUsd } from "@/lib/pricing/model-costs";
 import {
   summarizeRuns,
   bucketRuns,
@@ -30,17 +31,20 @@ export default async function ObservabilityPage({
   // arbitrary 500 rows, so the figures were not the latest anything.
   const { data: runs } = await db
     .from("agent_runs")
-    .select("status, duration_ms, created_at, trace")
+    .select("status, duration_ms, created_at, trace, cost_usd")
     .eq("org_id", ctx.orgId)
     .gte("created_at", rangeStart(range.id))
     .order("created_at", { ascending: false })
     .limit(5000);
 
-  const rows = (runs ?? []) as Array<RunRow & { trace: unknown }>;
+  const rows = (runs ?? []) as Array<RunRow & { trace: unknown; cost_usd: number | string | null }>;
   const summary = summarizeRuns(rows);
   const series = bucketRuns(rows, range.id);
   const providers = providerUsage(rows);
   const errors = errorRate(summary);
+  // Unpriced runs are counted separately rather than summed as zero, so the
+  // total never understates spend by silently treating "no rate" as "free".
+  const cost = totalCostUsd(rows.map((r) => (r.cost_usd === null ? null : Number(r.cost_usd))));
 
   return (
     <PlatformPage
@@ -58,6 +62,11 @@ export default async function ObservabilityPage({
 
       <section aria-label="Reliability metrics" className="grid grid-cols-2 gap-4 lg:grid-cols-3">
         <MetricCard label="Total runs" value={summary.total} icon={ListChecks} />
+        <MetricCard
+          label="Estimated provider cost"
+          value={formatCostUsd(cost.priced > 0 ? cost.total : null)}
+          hint={cost.unpriced > 0 ? `${cost.unpriced.toLocaleString()} run(s) have no configured model rate` : undefined}
+        />
         <MetricCard
           label="Success rate"
           value={summary.successRate === null ? "—" : `${summary.successRate}%`}

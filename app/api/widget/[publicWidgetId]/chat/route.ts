@@ -1,3 +1,5 @@
+import { providerOf } from "@/lib/chat/provider-of";
+import { guardConfigured } from "@/lib/api/not-configured";
 import { NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/supabase/service";
 import { runAgentChat, toAgentForChat } from "@/lib/chat/run-agent-chat";
@@ -31,6 +33,9 @@ async function resolveBranding(orgId: string, supabase: ReturnType<typeof create
 }
 
 export async function GET(request: Request, { params }: { params: { publicWidgetId: string } }) {
+  const notConfigured = guardConfigured();
+  if (notConfigured) return notConfigured;
+
   const supabase = createServiceClient();
   const agent = await loadWidgetAgent(params.publicWidgetId, supabase);
 
@@ -95,10 +100,16 @@ export async function POST(request: Request, { params }: { params: { publicWidge
       status: "succeeded",
       input: { message: body.message, channel: "widget" },
       output: { reply: result.reply },
-      trace: [{ step: "model", provider: "widget", model: result.model }],
+      // "widget" is the channel, not the provider. Recording it here
+      // attributed every widget run to a provider named "widget" in the
+      // analytics breakdown; the channel belongs on its own trace step.
+      trace: [
+        { step: "channel", channel: "widget" },
+        { step: "model", provider: providerOf(result.model), model: result.model },
+      ],
       durationMs: Date.now() - started,
       tokenUsage: result.tokenUsage,
-      costUsd: 0,
+      costUsd: result.costUsd,
     });
     return NextResponse.json({ reply: result.reply });
   } catch (e) {
@@ -112,7 +123,8 @@ export async function POST(request: Request, { params }: { params: { publicWidge
       error: message,
       trace: [{ step: "agent", status: "failed" }],
       durationMs: Date.now() - started,
-      costUsd: 0,
+      // The call threw before returning usage, so the cost is unknown.
+      costUsd: null,
     });
     return NextResponse.json({ error: "This assistant is temporarily unavailable." }, { status: 502 });
   }

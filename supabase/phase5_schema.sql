@@ -5,7 +5,7 @@ set search_path to agentmi, public, extensions;
 
 -- Phase 5: multi-agent workflows + white-label widget support.
 
-create table workflows (
+create table if not exists workflows (
   id uuid primary key default gen_random_uuid(),
   org_id uuid not null references organizations(id) on delete cascade,
   name text not null,
@@ -16,7 +16,7 @@ create table workflows (
 -- An AI agent's membership in a workflow as a specialist. An agent can
 -- belong to at most one workflow (simplifies routing/ownership); the
 -- first-added member is the fallback when routing finds no term overlap.
-create table workflow_members (
+create table if not exists workflow_members (
   workflow_id uuid not null references workflows(id) on delete cascade,
   agent_id uuid not null references agents(id) on delete cascade,
   keywords text[] not null default array[]::text[],
@@ -28,15 +28,17 @@ create table workflow_members (
 -- NOT the org's API key (that would leak a full-access credential into
 -- every visitor's page source). Scoped to exactly one agent's /chat.
 alter table agents add column public_widget_id uuid not null default gen_random_uuid();
-create unique index idx_agents_public_widget_id on agents(public_widget_id);
+create unique index if not exists idx_agents_public_widget_id on agents(public_widget_id);
 
 alter table workflows enable row level security;
 alter table workflow_members enable row level security;
 
+drop policy if exists "org members can manage their workflows" on workflows;
 create policy "org members can manage their workflows" on workflows
   for all using (is_org_member(org_id) or is_platform_admin())
   with check (is_org_member(org_id) or is_platform_admin());
 
+drop policy if exists "org members can manage their workflow members" on workflow_members;
 create policy "org members can manage their workflow members" on workflow_members
   for all using (
     is_platform_admin() or exists (

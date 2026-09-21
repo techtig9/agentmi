@@ -59,10 +59,23 @@ don't need to touch app code, only the steps below.
    supabase/functions.sql
    supabase/seed_templates.sql
    supabase/phase3_schema.sql
+   supabase/phase3_knowledge_sources.sql
    supabase/phase4_schema.sql
+   supabase/phase4_memory.sql
    supabase/phase5_schema.sql
+   supabase/phase5_graph.sql
    supabase/phase6_schema.sql
+   supabase/phase7_10_schema.sql
+   supabase/phase8_governance.sql
+   supabase/phase9_ecosystem.sql
+   supabase/phaseR_support.sql
+   supabase/phase10_run_costs.sql
    ```
+
+   All sixteen are idempotent (`CREATE TABLE IF NOT EXISTS`, `CREATE OR
+   REPLACE`, `DROP POLICY IF EXISTS`), so re-running the list is safe.
+   `tests/phase4-repo.test.ts` asserts this list stays complete and in a
+   valid dependency order.
 
 5. Settings → API → **Exposed schemas** → add `agentmi` to the list
    (alongside `public`, `graphql_public` — don't remove those). Without
