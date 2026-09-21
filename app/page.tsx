@@ -26,6 +26,7 @@ import { FaqList } from "@/components/marketing/FaqList";
 import { NodeGraph } from "@/components/marketing/NodeGraph";
 import { PricingTable } from "@/components/marketing/PricingTable";
 import { StructuredData } from "@/components/marketing/StructuredData";
+import { LEGAL_DOCUMENTS } from "@/lib/content/legal";
 
 /**
  * Always rendered per-request. Before the configuration guard below this page
@@ -85,11 +86,31 @@ export default async function LandingPage() {
       </main>
 
       <footer className="border-t border-base-700 px-4 py-10">
-        <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-4 text-sm text-ink-600 sm:flex-row">
-          <span className="font-display font-bold text-ink-100">
-            agent<span className="text-neon-cyan">mi</span>
-          </span>
-          <p>Build · test · evaluate · deploy · observe.</p>
+        <div className="mx-auto max-w-6xl">
+          <div className="flex flex-col items-center justify-between gap-4 text-sm text-ink-600 sm:flex-row">
+            <span className="font-display font-bold text-ink-100">
+              agent<span className="text-neon-cyan">mi</span>
+            </span>
+            <p>Build · test · evaluate · deploy · observe.</p>
+          </div>
+
+          <nav
+            aria-label="Legal and product information"
+            className="mt-6 flex flex-wrap justify-center gap-x-5 gap-y-2 border-t border-base-700 pt-6 sm:justify-start"
+          >
+            <Link href="/changelog" className="text-xs text-ink-600 transition-colors hover:text-ink-100">
+              Changelog
+            </Link>
+            {LEGAL_DOCUMENTS.map((doc) => (
+              <Link
+                key={doc.slug}
+                href={`/legal/${doc.slug}`}
+                className="text-xs text-ink-600 transition-colors hover:text-ink-100"
+              >
+                {doc.title}
+              </Link>
+            ))}
+          </nav>
         </div>
       </footer>
     </div>

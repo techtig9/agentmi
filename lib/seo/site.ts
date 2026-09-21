@@ -25,11 +25,16 @@ export const SITE_NAME = "Agentmi";
 export const SITE_TAGLINE = "Build, test, evaluate and deploy AI agents";
 
 /** Public, indexable marketing routes. The sitemap is generated from this. */
+export const LEGAL_SLUGS = ["privacy", "terms", "refund", "cookies", "subprocessors", "ai-disclosure"] as const;
+
 export const PUBLIC_ROUTES = [
   { path: "/", priority: 1.0, changeFrequency: "weekly" as const },
   { path: "/changelog", priority: 0.5, changeFrequency: "weekly" as const },
-  { path: "/legal/privacy", priority: 0.3, changeFrequency: "yearly" as const },
-  { path: "/legal/terms", priority: 0.3, changeFrequency: "yearly" as const },
+  ...LEGAL_SLUGS.map((slug) => ({
+    path: `/legal/${slug}`,
+    priority: 0.3,
+    changeFrequency: "yearly" as const,
+  })),
 ];
 
 /**
