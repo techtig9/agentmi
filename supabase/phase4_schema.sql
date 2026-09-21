@@ -7,7 +7,7 @@ set search_path to agentmi, public, extensions;
 -- (webhook_endpoints / webhook_deliveries). Distinct from the inbound
 -- Paddle webhook (Phase 3) — these are Agentmi notifying ITS customers.
 
-create table api_keys (
+create table if not exists api_keys (
   id uuid primary key default gen_random_uuid(),
   org_id uuid not null references organizations(id) on delete cascade,
   name text not null default 'API Key',
@@ -19,7 +19,7 @@ create table api_keys (
   revoked_at timestamptz
 );
 
-create table webhook_endpoints (
+create table if not exists webhook_endpoints (
   id uuid primary key default gen_random_uuid(),
   org_id uuid not null references organizations(id) on delete cascade,
   url text not null,
@@ -30,7 +30,7 @@ create table webhook_endpoints (
   created_at timestamptz not null default now()
 );
 
-create table webhook_deliveries (
+create table if not exists webhook_deliveries (
   id uuid primary key default gen_random_uuid(),
   endpoint_id uuid not null references webhook_endpoints(id) on delete cascade,
   event text not null,
@@ -44,14 +44,17 @@ alter table api_keys enable row level security;
 alter table webhook_endpoints enable row level security;
 alter table webhook_deliveries enable row level security;
 
+drop policy if exists "org members can manage their api keys" on api_keys;
 create policy "org members can manage their api keys" on api_keys
   for all using (is_org_member(org_id) or is_platform_admin())
   with check (is_org_member(org_id) or is_platform_admin());
 
+drop policy if exists "org members can manage their webhook endpoints" on webhook_endpoints;
 create policy "org members can manage their webhook endpoints" on webhook_endpoints
   for all using (is_org_member(org_id) or is_platform_admin())
   with check (is_org_member(org_id) or is_platform_admin());
 
+drop policy if exists "org members can read their webhook delivery log" on webhook_deliveries;
 create policy "org members can read their webhook delivery log" on webhook_deliveries
   for select using (
     is_platform_admin() or exists (
@@ -59,5 +62,5 @@ create policy "org members can read their webhook delivery log" on webhook_deliv
     )
   );
 
-create index idx_api_keys_hash on api_keys(key_hash) where revoked_at is null;
-create index idx_webhook_endpoints_org on webhook_endpoints(org_id) where is_active = true;
+create index if not exists idx_api_keys_hash on api_keys(key_hash) where revoked_at is null;
+create index if not exists idx_webhook_endpoints_org on webhook_endpoints(org_id) where is_active = true;

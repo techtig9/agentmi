@@ -8,7 +8,7 @@ set search_path to agentmi, public, extensions;
 -- Rate limiting: one row per (key), atomic via row lock — same pattern
 -- as consume_credits(). Mirrors lib/rate-limit/token-bucket.ts's math;
 -- keep both in sync if this changes.
-create table rate_limit_buckets (
+create table if not exists rate_limit_buckets (
   key text primary key,
   tokens double precision not null,
   last_refill_ms bigint not null
@@ -53,7 +53,7 @@ $$;
 
 -- ML prediction history — every call to /api/v1/agents/{id}/predict is
 -- logged, so an org can see what's been predicted and audit usage.
-create table prediction_history (
+create table if not exists prediction_history (
   id uuid primary key default gen_random_uuid(),
   org_id uuid not null references organizations(id) on delete cascade,
   agent_id uuid not null references agents(id) on delete cascade,
@@ -63,13 +63,14 @@ create table prediction_history (
 );
 
 alter table prediction_history enable row level security;
+drop policy if exists "org members can read their prediction history" on prediction_history;
 create policy "org members can read their prediction history" on prediction_history
   for select using (is_org_member(org_id) or is_platform_admin());
 
-create index idx_prediction_history_agent on prediction_history(agent_id, created_at desc);
+create index if not exists idx_prediction_history_agent on prediction_history(agent_id, created_at desc);
 
 -- Team invites — email-based, single-use, expiring.
-create table team_invites (
+create table if not exists team_invites (
   id uuid primary key default gen_random_uuid(),
   org_id uuid not null references organizations(id) on delete cascade,
   email text not null,
@@ -82,8 +83,9 @@ create table team_invites (
 );
 
 alter table team_invites enable row level security;
+drop policy if exists "org members can manage their invites" on team_invites;
 create policy "org members can manage their invites" on team_invites
   for all using (is_org_member(org_id) or is_platform_admin())
   with check (is_org_member(org_id) or is_platform_admin());
 
-create index idx_team_invites_org on team_invites(org_id) where accepted_at is null;
+create index if not exists idx_team_invites_org on team_invites(org_id) where accepted_at is null;

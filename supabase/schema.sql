@@ -9,7 +9,7 @@ set search_path to agentmi, public, extensions;
 create extension if not exists "pgcrypto";
 
 -- ---------- Profiles ----------
-create table profiles (
+create table if not exists profiles (
   id uuid primary key references auth.users(id) on delete cascade,
   full_name text,
   avatar_url text,
@@ -18,7 +18,7 @@ create table profiles (
 );
 
 -- ---------- Organizations / Workspaces ----------
-create table organizations (
+create table if not exists organizations (
   id uuid primary key default gen_random_uuid(),
   name text not null,
   slug text not null unique,
@@ -26,9 +26,12 @@ create table organizations (
   created_at timestamptz not null default now()
 );
 
-create type org_role as enum ('owner', 'admin', 'member');
+do $$ begin
+  create type org_role as enum ('owner', 'admin', 'member');
+exception when duplicate_object then null;
+end $$;
 
-create table memberships (
+create table if not exists memberships (
   org_id uuid not null references organizations(id) on delete cascade,
   user_id uuid not null references profiles(id) on delete cascade,
   role org_role not null default 'member',
@@ -37,11 +40,20 @@ create table memberships (
 );
 
 -- ---------- Billing ----------
-create type plan_id as enum ('free', 'starter', 'pro', 'business');
-create type billing_cycle as enum ('monthly', 'yearly');
-create type subscription_status as enum ('active', 'past_due', 'canceled', 'trialing');
+do $$ begin
+  create type plan_id as enum ('free', 'starter', 'pro', 'business');
+exception when duplicate_object then null;
+end $$;
+do $$ begin
+  create type billing_cycle as enum ('monthly', 'yearly');
+exception when duplicate_object then null;
+end $$;
+do $$ begin
+  create type subscription_status as enum ('active', 'past_due', 'canceled', 'trialing');
+exception when duplicate_object then null;
+end $$;
 
-create table subscriptions (
+create table if not exists subscriptions (
   org_id uuid primary key references organizations(id) on delete cascade,
   plan plan_id not null default 'free',
   cycle billing_cycle not null default 'monthly',
@@ -54,9 +66,12 @@ create table subscriptions (
 
 -- ---------- Credits ----------
 -- Ledger is the source of truth; balance is a maintained rollup for fast reads.
-create type credit_entry_type as enum ('grant', 'consume', 'topup', 'refund');
+do $$ begin
+  create type credit_entry_type as enum ('grant', 'consume', 'topup', 'refund');
+exception when duplicate_object then null;
+end $$;
 
-create table credit_ledger (
+create table if not exists credit_ledger (
   id uuid primary key default gen_random_uuid(),
   org_id uuid not null references organizations(id) on delete cascade,
   amount integer not null, -- positive for grant/topup/refund, negative for consume
@@ -67,16 +82,19 @@ create table credit_ledger (
   created_at timestamptz not null default now()
 );
 
-create table credit_balances (
+create table if not exists credit_balances (
   org_id uuid primary key references organizations(id) on delete cascade,
   balance integer not null default 0,
   updated_at timestamptz not null default now()
 );
 
 -- ---------- Templates ----------
-create type agent_kind as enum ('ai', 'ml');
+do $$ begin
+  create type agent_kind as enum ('ai', 'ml');
+exception when duplicate_object then null;
+end $$;
 
-create table templates (
+create table if not exists templates (
   id uuid primary key default gen_random_uuid(),
   kind agent_kind not null,
   category text not null, -- e.g. 'customer_support', 'churn_prediction'
@@ -87,9 +105,12 @@ create table templates (
 );
 
 -- ---------- Agents (AI + ML share one table; type-specific data in config/metrics) ----------
-create type agent_status as enum ('draft', 'training', 'ready', 'failed', 'archived');
+do $$ begin
+  create type agent_status as enum ('draft', 'training', 'ready', 'failed', 'archived');
+exception when duplicate_object then null;
+end $$;
 
-create table agents (
+create table if not exists agents (
   id uuid primary key default gen_random_uuid(),
   org_id uuid not null references organizations(id) on delete cascade,
   kind agent_kind not null,
@@ -104,7 +125,7 @@ create table agents (
 );
 
 -- ---------- Datasets (ML agents) ----------
-create table datasets (
+create table if not exists datasets (
   id uuid primary key default gen_random_uuid(),
   org_id uuid not null references organizations(id) on delete cascade,
   agent_id uuid references agents(id) on delete cascade,
@@ -116,7 +137,7 @@ create table datasets (
 );
 
 -- ---------- Model versions (ML agents) ----------
-create table ml_models (
+create table if not exists ml_models (
   id uuid primary key default gen_random_uuid(),
   agent_id uuid not null references agents(id) on delete cascade,
   version integer not null,
@@ -129,7 +150,7 @@ create table ml_models (
 );
 
 -- ---------- Audit log ----------
-create table audit_logs (
+create table if not exists audit_logs (
   id uuid primary key default gen_random_uuid(),
   org_id uuid references organizations(id) on delete cascade,
   actor_id uuid references profiles(id),
@@ -138,7 +159,7 @@ create table audit_logs (
   created_at timestamptz not null default now()
 );
 
-create index idx_memberships_user on memberships(user_id);
-create index idx_agents_org on agents(org_id);
-create index idx_credit_ledger_org on credit_ledger(org_id, created_at desc);
-create index idx_audit_logs_org on audit_logs(org_id, created_at desc);
+create index if not exists idx_memberships_user on memberships(user_id);
+create index if not exists idx_agents_org on agents(org_id);
+create index if not exists idx_credit_ledger_org on credit_ledger(org_id, created_at desc);
+create index if not exists idx_audit_logs_org on audit_logs(org_id, created_at desc);
