@@ -1,3 +1,4 @@
+import { guardConfigured } from "@/lib/api/not-configured";
 import { NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/supabase/service";
 import { authenticateApiRequest } from "@/lib/api-keys/authenticate";
@@ -6,6 +7,9 @@ import { creditCostFor } from "@/lib/pricing/costs";
 import { checkRateLimit, RATE_LIMITS } from "@/lib/rate-limit/check";
 
 export async function POST(request: Request, { params }: { params: { id: string } }) {
+  const notConfigured = guardConfigured();
+  if (notConfigured) return notConfigured;
+
   const auth = await authenticateApiRequest(request);
   if (!auth) {
     return NextResponse.json({ error: "Invalid or missing API key." }, { status: 401 });

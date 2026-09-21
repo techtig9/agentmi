@@ -1,3 +1,4 @@
+import { guardConfigured } from "@/lib/api/not-configured";
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { getOrgContext } from "@/lib/data/org-context";
@@ -7,6 +8,9 @@ import { recordAgentRun } from "@/lib/observability/record-run";
 import { getOrCreateSession, loadSessionMessages, appendSessionMessages, getMemories } from "@/lib/memory/store";
 
 export async function POST(request: Request, { params }: { params: { id: string } }) {
+  const notConfigured = guardConfigured();
+  if (notConfigured) return notConfigured;
+
   const ctx = await getOrgContext();
   const supabase = createClient();
   let body: { message?: string; company_name?: string; history?: { role: "user" | "assistant"; content: string }[]; session_id?: string; memory_enabled?: boolean };

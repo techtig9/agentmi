@@ -1,3 +1,4 @@
+import { guardConfigured } from "@/lib/api/not-configured";
 import { NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/supabase/service";
 import { runAgentChat, toAgentForChat } from "@/lib/chat/run-agent-chat";
@@ -31,6 +32,9 @@ async function resolveBranding(orgId: string, supabase: ReturnType<typeof create
 }
 
 export async function GET(request: Request, { params }: { params: { publicWidgetId: string } }) {
+  const notConfigured = guardConfigured();
+  if (notConfigured) return notConfigured;
+
   const supabase = createServiceClient();
   const agent = await loadWidgetAgent(params.publicWidgetId, supabase);
 
