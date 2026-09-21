@@ -1,6 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { readFileSync, readdirSync } from "node:fs";
+import { readFileSync, readdirSync, existsSync } from "node:fs";
+import { join } from "node:path";
 
 const root = new URL("..", import.meta.url).pathname;
 const read = (p: string) => readFileSync(root + p, "utf8");
@@ -129,4 +130,25 @@ test("the README documents setup, scripts, structure and deployment", () => {
     assert.ok(readme.includes(heading), `README is missing ${heading}`);
   }
   assert.ok(readme.includes("docs/DEPLOY_VERCEL.md"), "README must link the deploy guide");
+});
+
+test("the test runner does not depend on shell or Node glob support", () => {
+  // `tsx --test tests/**/*.test.ts` matched nothing on CI: sh does not expand
+  // `**` (globstar is off), and tsx's own expansion uses fs.glob, which is
+  // Node 22+. On the Node 20 that engines.node declares, npm test ran zero
+  // tests and exited 1. It only passed locally because this machine is Node 22.
+  const pkg = JSON.parse(read("package.json"));
+  assert.doesNotMatch(pkg.scripts.test, /\*\*/, "the test script must not rely on glob expansion");
+  assert.ok(existsSync(join(root, "scripts/run-tests.mjs")), "the enumerating runner must exist");
+});
+
+test("the runner enumerates every test file on disk", () => {
+  const onDisk = readdirSync(join(root, "tests"), { recursive: true, withFileTypes: true })
+    .filter((entry) => entry.isFile() && entry.name.endsWith(".test.ts"));
+  assert.ok(onDisk.length >= 20, `expected the full suite, found ${onDisk.length}`);
+
+  // An empty match must fail loudly rather than report a green run of nothing.
+  const runner = read("scripts/run-tests.mjs");
+  assert.match(runner, /files\.length === 0/, "zero test files must be an explicit failure");
+  assert.match(runner, /parentPath \?\? /, "Node 20 exposes entry.path, not entry.parentPath");
 });
