@@ -1,3 +1,4 @@
+import { providerOf } from "@/lib/chat/provider-of";
 import { guardConfigured } from "@/lib/api/not-configured";
 import { NextResponse } from "next/server";
 import { z } from "zod";
@@ -110,8 +111,11 @@ export async function POST(request: Request, { params }: { params: { id: string 
         await recordAgentRun({
           orgId: auth.orgId, agentId: node.agent_id, status: "succeeded",
           input: { message: current, channel: "workflow", workflow_id: wf.id, node_id: node.id },
-          output: { reply: result.reply }, trace: [{ step: "workflow_node", node_id: node.id, model: result.model }],
-          durationMs: Date.now() - started, tokenUsage: result.tokenUsage, costUsd: 0,
+          output: { reply: result.reply }, trace: [
+            { step: "workflow_node", node_id: node.id },
+            { step: "model", provider: providerOf(result.model), model: result.model },
+          ],
+          durationMs: Date.now() - started, tokenUsage: result.tokenUsage, costUsd: result.costUsd,
         });
         current = result.reply;
         steps.push({ node_id: node.id, label: node.label, agent_id: node.agent_id, reply: result.reply, sources_used: result.sourcesUsed, model: result.model });
@@ -120,7 +124,7 @@ export async function POST(request: Request, { params }: { params: { id: string 
         await recordAgentRun({
           orgId: auth.orgId, agentId: node.agent_id, status: "failed",
           input: { message: current, channel: "workflow", workflow_id: wf.id, node_id: node.id },
-          error: message, trace: [{ step: "workflow_node", node_id: node.id, status: "failed" }], durationMs: Date.now() - started, costUsd: 0,
+          error: message, trace: [{ step: "workflow_node", node_id: node.id, status: "failed" }], durationMs: Date.now() - started, costUsd: null,
         });
         return NextResponse.json({ error: "This workflow is temporarily unavailable." }, { status: 502 });
       }
@@ -150,8 +154,11 @@ export async function POST(request: Request, { params }: { params: { id: string 
     await recordAgentRun({
       orgId: auth.orgId, agentId: routed.specialistId, status: "succeeded",
       input: { message: body.message, channel: "workflow_legacy", workflow_id: wf.id },
-      output: { reply: result.reply }, trace: [{ step: "specialist_routed", matched_terms: routed.matchedTerms }],
-      durationMs: Date.now() - started, tokenUsage: result.tokenUsage, costUsd: 0,
+      output: { reply: result.reply }, trace: [
+        { step: "specialist_routed", matched_terms: routed.matchedTerms },
+        { step: "model", provider: providerOf(result.model), model: result.model },
+      ],
+      durationMs: Date.now() - started, tokenUsage: result.tokenUsage, costUsd: result.costUsd,
     });
     return NextResponse.json({
       workflow_id: wf.id,
@@ -164,7 +171,7 @@ export async function POST(request: Request, { params }: { params: { id: string 
     await recordAgentRun({
       orgId: auth.orgId, agentId: routed.specialistId, status: "failed",
       input: { message: body.message, channel: "workflow_legacy", workflow_id: wf.id },
-      error: message, trace: [{ step: "specialist_routed", status: "failed" }], durationMs: Date.now() - started, costUsd: 0,
+      error: message, trace: [{ step: "specialist_routed", status: "failed" }], durationMs: Date.now() - started, costUsd: null,
     });
     return NextResponse.json({ error: "This workflow is temporarily unavailable." }, { status: 502 });
   }

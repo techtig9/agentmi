@@ -47,6 +47,7 @@ supabase/phase7_10_schema.sql
 supabase/phase8_governance.sql
 supabase/phase9_ecosystem.sql
 supabase/phaseR_support.sql
+supabase/phase10_run_costs.sql
 ```
 
 Then, still in Supabase:

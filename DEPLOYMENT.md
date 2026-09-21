@@ -69,6 +69,7 @@ don't need to touch app code, only the steps below.
    supabase/phase8_governance.sql
    supabase/phase9_ecosystem.sql
    supabase/phaseR_support.sql
+   supabase/phase10_run_costs.sql
    ```
 
    All sixteen are idempotent (`CREATE TABLE IF NOT EXISTS`, `CREATE OR

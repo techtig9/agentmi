@@ -28,6 +28,7 @@ const MIGRATION_ORDER = [
   "phase8_governance.sql",
   "phase9_ecosystem.sql",
   "phaseR_support.sql",
+  "phase10_run_costs.sql",
 ];
 
 test("the documented order covers every migration on disk", () => {

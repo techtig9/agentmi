@@ -7,6 +7,7 @@ import { MetricCard } from "@/components/ui/Card";
 import { StatusBadge } from "@/components/ui/Badge";
 import { ErrorState } from "@/components/ui/States";
 import { formatDuration } from "@/lib/data/run-metrics";
+import { formatCostUsd } from "@/lib/pricing/model-costs";
 
 const STEP_META: Record<string, { icon: typeof Cpu; label: string; tone: string }> = {
   retrieve: { icon: BookOpen, label: "Knowledge retrieval", tone: "text-neon-cyan" },
@@ -83,7 +84,10 @@ export default async function RunDetailPage({ params }: { params: { id: string }
                 : "—"
           }
         />
-        <MetricCard label="Recorded cost" value={`$${Number(run.cost_usd ?? 0).toFixed(4)}`} />
+        <MetricCard
+          label="Estimated cost"
+          value={formatCostUsd(run.cost_usd === null || run.cost_usd === undefined ? null : Number(run.cost_usd))}
+        />
       </section>
 
       <div className="neon-card mb-6 p-5">

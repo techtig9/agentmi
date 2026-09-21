@@ -10,7 +10,8 @@ export async function recordAgentRun(input: {
   trace?: unknown[];
   durationMs?: number;
   tokenUsage?: Record<string, unknown>;
-  costUsd?: number;
+  /** null when the model has no configured rate — distinct from 'cost was zero'. */
+  costUsd?: number | null;
   error?: string;
 }) {
   const supabase = createServiceClient();
@@ -24,7 +25,9 @@ export async function recordAgentRun(input: {
     trace: input.trace ?? [],
     duration_ms: input.durationMs ?? null,
     token_usage: input.tokenUsage ?? {},
-    cost_usd: input.costUsd ?? 0,
+    // null, not 0: 'not priced' and 'free' are different facts and a cost
+    // report that collapses them is wrong rather than merely imprecise.
+    cost_usd: input.costUsd ?? null,
     error: input.error ?? null,
   }).select("id").single();
   if (error) console.error("agent run recording failed", error.message);

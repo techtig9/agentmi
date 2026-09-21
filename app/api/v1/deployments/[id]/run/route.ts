@@ -1,3 +1,4 @@
+import { providerOf } from "@/lib/chat/provider-of";
 import { guardConfigured } from "@/lib/api/not-configured";
 import { NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/supabase/service";
@@ -37,11 +38,11 @@ export async function POST(request: Request, { params }: { params: { id: string 
   const started = Date.now();
   try {
     const result = await runAgentChat(toAgentForChat(agent), body.message, body.company_name ?? "the company");
-    await recordAgentRun({ orgId: auth.orgId, agentId: agent.id, deploymentId: deployment.id, status: "succeeded", input: { message: body.message }, output: { reply: result.reply }, trace: [{ step: "deployment", deployment_id: deployment.id, environment: deployment.environment, version: deployment.version }, { step: "retrieve", sources: result.sourcesUsed }, { step: "model", provider: "anthropic", model: result.model }, ...result.toolCalls.map((t) => ({ step: "tool", name: t.name, tool_id: t.toolId, status: t.error ? "failed" : "succeeded" }))], durationMs: Date.now() - started, tokenUsage: result.tokenUsage, costUsd: 0 });
+    await recordAgentRun({ orgId: auth.orgId, agentId: agent.id, deploymentId: deployment.id, status: "succeeded", input: { message: body.message }, output: { reply: result.reply }, trace: [{ step: "deployment", deployment_id: deployment.id, environment: deployment.environment, version: deployment.version }, { step: "retrieve", sources: result.sourcesUsed }, { step: "model", provider: providerOf(result.model), model: result.model }, ...result.toolCalls.map((t) => ({ step: "tool", name: t.name, tool_id: t.toolId, status: t.error ? "failed" : "succeeded" }))], durationMs: Date.now() - started, tokenUsage: result.tokenUsage, costUsd: result.costUsd });
     return NextResponse.json({ deployment_id: deployment.id, agent_id: agent.id, version: deployment.version, environment: deployment.environment, reply: result.reply, sources_used: result.sourcesUsed, model: result.model, token_usage: result.tokenUsage, tool_calls: result.toolCalls });
   } catch (e) {
     const message = e instanceof Error ? e.message : "Deployment execution failed.";
-    await recordAgentRun({ orgId: auth.orgId, agentId: agent.id, deploymentId: deployment.id, status: "failed", input: { message: body.message }, error: message, trace: [{ step: "deployment", deployment_id: deployment.id, status: "failed" }], durationMs: Date.now() - started, costUsd: 0 });
+    await recordAgentRun({ orgId: auth.orgId, agentId: agent.id, deploymentId: deployment.id, status: "failed", input: { message: body.message }, error: message, trace: [{ step: "deployment", deployment_id: deployment.id, status: "failed" }], durationMs: Date.now() - started, costUsd: null });
     return NextResponse.json({ error: "Deployment execution failed. Check Runs for details." }, { status: 502 });
   }
 }
