@@ -1,0 +1,23 @@
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    groups:
+      # One PR for the routine patch churn, separate PRs for majors so a
+      # breaking change is never buried in a batch of safe bumps.
+      patch-and-minor:
+        update-types: [patch, minor]
+
+  - package-ecosystem: pip
+    directory: /training-service
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 3
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly

@@ -1,4 +1,6 @@
 import { guardConfigured } from "@/lib/api/not-configured";
+import { parseJsonBody } from "@/lib/api/validate";
+import { playgroundMessageSchema } from "@/lib/api/schemas";
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { getOrgContext } from "@/lib/data/org-context";
@@ -13,11 +15,13 @@ export async function POST(request: Request, { params }: { params: { id: string 
 
   const ctx = await getOrgContext();
   const supabase = createClient();
-  let body: { message?: string; company_name?: string; history?: { role: "user" | "assistant"; content: string }[]; session_id?: string; memory_enabled?: boolean };
-  try { body = await request.json(); } catch { return NextResponse.json({ error: "Invalid JSON." }, { status: 400 }); }
-  if (!body.message || typeof body.message !== "string" || body.message.length > 4000) {
-    return NextResponse.json({ error: "Message is required and must be under 4000 characters." }, { status: 400 });
-  }
+  // `history` is forwarded to the model, so an unbounded array is both a cost
+  // and a latency vector: a caller could paste an arbitrarily long transcript
+  // into a single request. Bounding it here is the only place it can be done
+  // before the tokens are paid for.
+  const parsed = await parseJsonBody(request, playgroundMessageSchema);
+  if (!parsed.ok) return parsed.response;
+  const body = parsed.data;
   const { data: agent } = await supabase.from("agents")
     .select("id,org_id,name,kind,status,config,templates(config)")
     .eq("id", params.id).eq("org_id", ctx.orgId).single();
