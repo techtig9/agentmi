@@ -1,69 +1,76 @@
 import type { Config } from "tailwindcss";
 
 /**
- * Agentmi design tokens — "Premium Dark AI Operating System".
+ * Agentmi design tokens.
  *
- * Two layers, deliberately:
+ * Every colour resolves to a CSS custom property defined in `globals.css`, as
+ * an "R G B" channel triplet wrapped in `rgb(... / <alpha-value>)`. Two things
+ * follow from that shape, and both are load-bearing:
  *
- *  1. PRIMITIVE scales (`base`, `neon`, `ink`) — the raw palette. These are the
- *     original tokens and every existing class that referenced them keeps its
- *     exact meaning, so adding layer 2 cannot regress any screen.
- *  2. SEMANTIC aliases (`surface`, `accent`, `success`, `danger`, …) — what a
- *     color *means* rather than what it looks like. New code should reach for
- *     these so a future palette change is a one-file edit instead of a
- *     repo-wide find-and-replace.
+ *  - Tailwind's opacity modifiers keep working (`bg-accent/10`,
+ *    `border-neon-cyan/40`). A plain `var(--x)` holding a hex string would
+ *    silently break every one of those, and there are well over a hundred.
+ *  - Light and dark are one variable swap, not two sets of classes. No
+ *    component needs a `dark:` variant, so a screen cannot ship supporting
+ *    only one theme.
  *
- * Contrast note: every foreground token below was checked against the surface
- * it is used on and meets WCAG 2.2 AA for its size class. `ink-600` in
- * particular is #82879F rather than a darker grey because the original value
- * measured ~3:1 and failed AA at the small sizes it is used at.
+ * Names are kept from the previous palette (`base`, `neon`, `ink`) so existing
+ * markup keeps its meaning; `neon-cyan` is now the product's teal accent
+ * rather than literal cyan. New code should prefer the semantic aliases below.
+ *
+ * Contrast: every foreground token was validated against the surfaces it is
+ * used on, in BOTH themes, at WCAG 2.2 AA (4.5:1). The light accent is
+ * teal-700 rather than teal-600 because teal-600 measured 3.51:1 and failed.
  */
+const channel = (name: string) => `rgb(var(${name}) / <alpha-value>)`;
+
 const config: Config = {
+  darkMode: "class",
   content: ["./app/**/*.{ts,tsx}", "./components/**/*.{ts,tsx}"],
   theme: {
     extend: {
       colors: {
-        // ---- Layer 1: primitives -------------------------------------------
+        // ---- Layer 1: primitives (names retained for compatibility) --------
         base: {
-          950: "#07070C", // page background
-          900: "#0A0A0F", // panel background
-          800: "#121218", // card background
-          700: "#1B1B24", // card border (resting)
+          950: channel("--canvas"),
+          900: channel("--panel"),
+          800: channel("--surface"),
+          700: channel("--hairline"),
         },
         neon: {
-          cyan: "#00F0FF",
-          violet: "#B026FF",
-          green: "#39FF14",
-          pink: "#FF2E9A",
-          amber: "#FFB020", // warning — the palette had no warning hue
+          cyan: channel("--accent"), // primary accent — teal
+          violet: channel("--accent-secondary"), // supporting indigo
+          green: channel("--state-success"),
+          pink: channel("--state-danger"),
+          amber: channel("--state-warning"),
         },
         ink: {
-          100: "#F4F6FB", // primary text
-          400: "#9AA0B4", // secondary text
-          600: "#82879F", // muted/disabled text — AA at small sizes
+          100: channel("--content"),
+          400: channel("--content-muted"),
+          600: channel("--content-subtle"),
         },
 
         // ---- Layer 2: semantic aliases -------------------------------------
-        canvas: "#07070C", // page background
-        panel: "#0A0A0F", // nav/rail background
-        surface: "#121218", // resting card/control surface
-        elevated: "#1B1B24", // raised surface (menus, popovers, hover rows)
-        hairline: "#1B1B24", // default border
+        canvas: channel("--canvas"),
+        panel: channel("--panel"),
+        surface: channel("--surface"),
+        elevated: channel("--elevated"),
+        hairline: channel("--hairline"),
         content: {
-          DEFAULT: "#F4F6FB", // primary text
-          muted: "#9AA0B4", // secondary text
-          subtle: "#82879F", // tertiary/disabled text
-          inverted: "#07070C", // text on a neon fill
+          DEFAULT: channel("--content"),
+          muted: channel("--content-muted"),
+          subtle: channel("--content-subtle"),
+          inverted: channel("--canvas"),
         },
         accent: {
-          DEFAULT: "#00F0FF", // primary accent
-          secondary: "#B026FF", // secondary accent
+          DEFAULT: channel("--accent"),
+          secondary: channel("--accent-secondary"),
         },
         state: {
-          success: "#39FF14",
-          warning: "#FFB020",
-          danger: "#FF2E9A",
-          info: "#00F0FF",
+          success: channel("--state-success"),
+          warning: channel("--state-warning"),
+          danger: channel("--state-danger"),
+          info: channel("--state-info"),
         },
       },
       fontFamily: {
@@ -72,41 +79,51 @@ const config: Config = {
         mono: ["var(--font-mono)", "monospace"],
       },
       boxShadow: {
-        "neon-cyan": "0 0 0 1px rgba(0,240,255,0.35), 0 0 24px rgba(0,240,255,0.25)",
-        "neon-violet": "0 0 0 1px rgba(176,38,255,0.35), 0 0 24px rgba(176,38,255,0.25)",
-        // Restrained elevation for menus/popovers — depth without a glow halo.
-        popover: "0 16px 40px -12px rgba(0,0,0,0.7), 0 0 0 1px rgba(27,27,36,1)",
+        "neon-cyan": "0 0 0 1px rgb(var(--accent) / 0.35), 0 0 24px rgb(var(--accent) / 0.22)",
+        "neon-violet":
+          "0 0 0 1px rgb(var(--accent-secondary) / 0.35), 0 0 24px rgb(var(--accent-secondary) / 0.22)",
+        popover: "var(--shadow-popover)",
       },
       backgroundImage: {
         "aurora-grid":
-          "radial-gradient(circle at 20% 20%, rgba(0,240,255,0.10), transparent 40%), radial-gradient(circle at 80% 0%, rgba(176,38,255,0.12), transparent 45%), radial-gradient(circle at 50% 100%, rgba(57,255,20,0.06), transparent 40%)",
+          "radial-gradient(circle at 20% 20%, rgb(var(--accent) / 0.10), transparent 40%), radial-gradient(circle at 80% 0%, rgb(var(--accent-secondary) / 0.12), transparent 45%), radial-gradient(circle at 50% 100%, rgb(var(--state-success) / 0.06), transparent 40%)",
+        // Node-graph motif: the product's own shape, used behind the hero.
+        "node-grid":
+          "radial-gradient(circle at 1px 1px, rgb(var(--content) / 0.07) 1px, transparent 0)",
       },
       borderRadius: {
         card: "16px",
       },
       transitionDuration: {
-        // The 150-300ms band the design system standardises on.
         fast: "150ms",
         base: "200ms",
         slow: "300ms",
       },
       keyframes: {
-        "fade-in": {
-          from: { opacity: "0" },
-          to: { opacity: "1" },
-        },
+        "fade-in": { from: { opacity: "0" }, to: { opacity: "1" } },
         "scale-in": {
           from: { opacity: "0", transform: "translateY(4px) scale(0.98)" },
           to: { opacity: "1", transform: "translateY(0) scale(1)" },
         },
-        shimmer: {
-          "100%": { transform: "translateX(100%)" },
+        "rise-in": {
+          from: { opacity: "0", transform: "translateY(16px)" },
+          to: { opacity: "1", transform: "translateY(0)" },
+        },
+        shimmer: { "100%": { transform: "translateX(100%)" } },
+        // Signal travelling along a connector in the node-graph motif.
+        "flow-dash": { to: { strokeDashoffset: "-24" } },
+        "pulse-node": {
+          "0%, 100%": { opacity: "0.45", transform: "scale(1)" },
+          "50%": { opacity: "1", transform: "scale(1.12)" },
         },
       },
       animation: {
         "fade-in": "fade-in 200ms ease-out",
         "scale-in": "scale-in 200ms ease-out",
+        "rise-in": "rise-in 300ms ease-out both",
         shimmer: "shimmer 1.6s infinite",
+        "flow-dash": "flow-dash 1.2s linear infinite",
+        "pulse-node": "pulse-node 2.4s ease-in-out infinite",
       },
     },
   },

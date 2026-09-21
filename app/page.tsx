@@ -25,6 +25,7 @@ import { PLANS, PLAN_ORDER } from "@/lib/pricing/plans";
 import { quotePrice } from "@/lib/pricing/engine";
 import { LandingNav } from "@/components/marketing/LandingNav";
 import { FaqList } from "@/components/marketing/FaqList";
+import { NodeGraph } from "@/components/marketing/NodeGraph";
 
 /**
  * Always rendered per-request. Before the configuration guard below this page
@@ -137,7 +138,11 @@ function Hero() {
         </p>
       </div>
 
-      <div className="relative mx-auto mt-16 max-w-4xl">
+      <div className="relative mx-auto mt-14 max-w-3xl px-2">
+        <NodeGraph className="h-auto w-full" />
+      </div>
+
+      <div className="relative mx-auto mt-10 max-w-4xl">
         <CodePreview />
       </div>
     </section>

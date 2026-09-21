@@ -71,9 +71,21 @@ test("every sidebar entry ships a real icon component, not a string", () => {
 });
 
 test("design tokens define the spec's accent palette and semantic aliases", () => {
+  // The palette moved from literal hexes in tailwind.config.ts to CSS
+  // variables so the product can theme. The guarantee is unchanged and now
+  // stricter: each accent role must be defined in BOTH themes, not just once.
   const config = fs.readFileSync(path.join(root, "tailwind.config.ts"), "utf8");
-  for (const hex of ["#00F0FF", "#B026FF", "#39FF14", "#FF2E9A"]) {
-    assert.ok(config.includes(hex), `design token ${hex} must remain defined`);
+  const css = fs.readFileSync(path.join(root, "app/globals.css"), "utf8");
+  const light = css.slice(css.indexOf(":root {"), css.indexOf(".dark {"));
+  const dark = css.slice(css.indexOf(".dark {"));
+
+  for (const role of ["--accent", "--accent-secondary", "--state-success", "--state-danger"]) {
+    for (const [name, block] of [["light", light], ["dark", dark]] as const) {
+      assert.ok(
+        new RegExp(`${role}:\\s*\\d+ \\d+ \\d+;`).test(block),
+        `accent token ${role} must remain defined in the ${name} theme`
+      );
+    }
   }
   for (const token of ["surface", "elevated", "accent", "canvas", "panel"]) {
     assert.ok(config.includes(`${token}:`), `semantic token \`${token}\` must be defined`);

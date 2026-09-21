@@ -4,6 +4,7 @@ import Link from "next/link";
 import { Bell, ChevronDown, CreditCard, LogOut, Menu, Search, Settings, ShieldCheck, Users } from "lucide-react";
 import { signOut } from "@/lib/actions/auth";
 import { Dropdown, DropdownItem, DropdownLabel, DropdownSeparator } from "@/components/ui/Dropdown";
+import { ThemeToggle } from "@/components/ui/ThemeToggle";
 
 interface TopbarProps {
   orgName: string;
@@ -64,6 +65,8 @@ export function Topbar({
             ⌘K
           </kbd>
         </button>
+
+        <ThemeToggle className="hidden sm:inline-flex" />
 
         <Link
           href="/dashboard/notifications"

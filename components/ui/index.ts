@@ -18,3 +18,5 @@ export { Table, THead, TBody, TR, TH, TD } from "./Table";
 export { ToastProvider, useToast, type ToastTone } from "./Toast";
 export { useFocusTrap, useScrollLock } from "./useFocusTrap";
 export { NeonInput } from "./NeonInput";
+export { ThemeToggle, resolveTheme, readStoredPreference, THEME_STORAGE_KEY } from "./ThemeToggle";
+export { ThemeScript } from "./ThemeScript";
